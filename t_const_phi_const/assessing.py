@@ -80,6 +80,9 @@ def renew_probalities(new_qubit_state, distr):
     old_distr = distr # saving current meanings to reaccount all P(F_i) at once
     for i in range(fields_number):
         distr[i] = reaccount_P_F_i(new_qubit_state, F_min + delta_F*i, old_distr)
+    for i in range(fields_number): # normalizing values so as the sum would be = 1
+        distr[i] = distr[i] * 1 / sum(distr)
+
     return distr
 
 if __name__ == '__main__':
@@ -88,7 +91,7 @@ if __name__ == '__main__':
         probability_distribution = renew_probalities(qubit.return_random_state(), probability_distribution)
         if i%50 == 0:
             plt.plot(range(1, fields_number + 1), probability_distribution) # distr each 50 steps
-    print(sum(probability_distribution)) # checking ~ 1
+            print(sum(probability_distribution)) # checking ~ 1
 
     plt.plot(range(1, fields_number+1), probability_distribution) # final distr
     plt.show()
