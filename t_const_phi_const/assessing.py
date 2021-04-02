@@ -8,7 +8,7 @@ F = 20  # field strength to be measured in Tesla
 F_min, F_max = 1, 100 # 1 ... 10 Tesla
 delta_F = 1 # accuracy of F defining
 fields_number = int( ((F_max - F_min + delta_F)//delta_F) ) # amount of discrete F meanings
-t = 4.44*10**(-8)  # time of interaction in seconds
+t = 4.44*10**(-7)/2 # time of interaction in seconds
 mu = 10**5  # magnetic moment of the qubit
 # constants end -----------------------
 
@@ -131,9 +131,9 @@ if __name__ == '__main__':
         probability_distribution = renew_probalities(qubit.return_random_state(), probability_distribution)
         x_peak, y_peak = find_peak(probability_distribution)
         sigma[t * (i+1)] = find_sigma(x_peak, y_peak, probability_distribution)
-        if (i+1)%60 == 0:
+        if (i+1)%50 == 0:
             plt.plot(range(F_min, F_max+delta_F, delta_F), probability_distribution) # distr each 50 steps
-            #print(sum(probability_distribution), x_peak, y_peak) # checking ~ 1
+            print(sum(probability_distribution), x_peak, y_peak) # checking ~ 1
 
 
     plt.plot(range(1, fields_number+1), probability_distribution) # final distr

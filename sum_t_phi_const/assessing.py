@@ -9,7 +9,7 @@ F_min, F_max = 1, 100 # 1 ... 10 Tesla
 delta_F = 1 # accuracy of F defining
 fields_number = int( ((F_max - F_min + delta_F)//delta_F) ) # amount of discrete F meanings
 t = 4.44*10**(-7)  # time of interaction in seconds
-time_const = 4.44*10**(-7) / 10000
+time_const = 4.44*10**(-8) / 10
 mu = 10**5  # magnetic momentum of the qubit
 # constants end -----------------------
 

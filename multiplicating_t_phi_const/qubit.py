@@ -1,11 +1,7 @@
-import random
 import math
+import numpy as np
 
-from multiplicating_t_phi_const import assessing
 
-
-def return_random_state():
-    r = random.randint(1, 10**5)
-    p_0 = (math.sin(assessing.mu * assessing.F * assessing.t / math.pi)) ** 2 * 10 ** 5
-    if r <= p_0: return 0
-    else: return 1
+def randbin(data, F):
+    p_0 = (math.sin(data.const * F * data.t)) ** 2
+    return np.random.choice([0, 1], size=(1,1), p=[p_0, 1-p_0]).reshape(1)[0]
