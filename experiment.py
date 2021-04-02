@@ -13,13 +13,13 @@ import plotter
 class ExperimentData:
     F_min = 1  # min field Tesla
     F_max = 60  # max field Tesla
-    delta_F = 0.5  # accuracy of F defining
+    delta_F = 1  # accuracy of F defining
     fields_number = int( (F_max - F_min + delta_F) // delta_F ) # amount of discrete F meanings
-    t = 1.04 * 10 ** (-40) # time of interaction in seconds
-    time_const = 1
+    time_const = 2
     mu = 10 ** 5  # magnetic moment of the qubit
     h = 6.62 * 10 ** (-34)  # plank's constant
     const = mu/h  # mu/h
+    t = 3.14/4/(const*(F_max - F_min)/2) / 2**20  # time of interaction in seconds
 
     probability_distribution = [1 / fields_number] * fields_number
 
@@ -68,11 +68,12 @@ def perform(F):
     experimentData = ExperimentData()
 
     sigma = {}
-    N = 1000
+    N = 1500
     t_sum = 0
     epsilon = 10 ** (-3)
     prev_sigma = experimentData.F_max - experimentData.F_min
     flag = False
+    prev_step = 0
     #
 
     print(experimentData.probability_distribution) # initial
@@ -88,21 +89,25 @@ def perform(F):
         if current_sigma != 0:
             sigma[t_sum] = current_sigma
 
-        if step <= 30 and prev_sigma == experimentData.F_max - experimentData.F_min and current_sigma != 0:
+        if step <= 50 and prev_sigma == experimentData.F_max - experimentData.F_min and current_sigma != 0:
             flag = True
 
-        if flag and prev_sigma+experimentData.delta_F > 2*current_sigma:# and prev_sigma != 0:
+        if flag and \
+                step - prev_step >= 10 and \
+                prev_sigma + experimentData.delta_F > 2 * current_sigma and\
+                experimentData.const * F * experimentData.t <= 3.14/2:
             prev_sigma = current_sigma
+            prev_step = step
             experimentData.t *= experimentData.time_const
             print(step)
 
         if flag and prev_sigma < current_sigma:
             prev_sigma = current_sigma
 
-        if (step+1) % 10 == 0:
+        if (step+1) % 5 == 0:
             plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], experimentData.probability_distribution) # distr each 50 steps
 
-        if (step + 1) % 10 == 0:
+        if (step + 1) % 2 == 0:
             print(sum(experimentData.probability_distribution), x_peak, y_peak, step, current_sigma, prev_sigma, t_sum, experimentData.const * F * experimentData.t, flag) # checking ~ 1
 
         if y_peak >= 1.0 - epsilon:
@@ -141,7 +146,7 @@ def perform(F):
 '''
 
 if __name__ == "__main__":
-    perform(20)
+    perform(40)
     #for i in range(200):
     #    average_20(50, experimentData.F_max)
     #    experimentData.F_max += 30

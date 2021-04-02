@@ -16,6 +16,7 @@ simulator = Aer.get_backend('qasm_simulator')
 
 def randbin2(data, F):
     phi = data.const * F * data.t
+
     # Use Aer's qasm_simulator
 
 
@@ -23,7 +24,7 @@ def randbin2(data, F):
     circuit = QuantumCircuit(1)
 
     circuit.h(0)
-    circuit.p(phi, 0)
+    circuit.rz(phi, 0)
     circuit.h(0)
 
     # Map the quantum measurement to the classical bits

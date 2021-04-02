@@ -23,7 +23,7 @@ phi = experiment.ExperimentData.const * 37 * experiment.ExperimentData.t
 print(phi)
 
 circuit.h(0)
-circuit.p(phi, 0)
+circuit.rz(phi, 0)
 circuit.h(0)
 
 # Map the quantum measurement to the classical bits
