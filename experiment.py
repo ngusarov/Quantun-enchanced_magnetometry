@@ -104,7 +104,7 @@ def perform(F):
         if flag and prev_sigma < current_sigma:
             prev_sigma = current_sigma
 
-        if (step) % 5 == 0:
+        if (step) % 20 == 0:
             plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], experimentData.probability_distribution) # distr each 50 steps
 
         if (step + 1) % 1 == 0:
@@ -146,7 +146,7 @@ def perform(F):
 '''
 
 if __name__ == "__main__":
-    perform(30)
+    perform(700)
     #for i in range(200):
     #    average_20(50, experimentData.F_max)
     #    experimentData.F_max += 30

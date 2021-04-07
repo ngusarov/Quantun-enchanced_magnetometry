@@ -16,7 +16,8 @@ def randbin(data, F):
 
 
 
-
+provider = IBMQ.enable_account(token=token)
+backend = provider.get_backend("ibmq_armonk")
 # Use Aer's qasm_simulator
 simulator = Aer.get_backend('qasm_simulator')
 def randbin2(data, F):
@@ -36,7 +37,7 @@ def randbin2(data, F):
     circuit.measure(q, c)
 
     # Execute the circuit on the qasm simulator
-    job = execute(circuit, simulator, shots=1)
+    job = execute(circuit, backend=backend, shots=1)
     #job_monitor(job)
 
     # Grab results from the job
