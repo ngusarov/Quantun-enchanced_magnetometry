@@ -1,4 +1,5 @@
 import math
+
 import numpy as np
 from qiskit import (
     QuantumCircuit,
@@ -8,7 +9,7 @@ from qiskit import (
 from qiskit import IBMQ
 
 
-def randbin(data, F):
+def randbin(data, F): # simple math
     phi = data.const * F * data.t
 
     p_0 = (math.sin(phi)) ** 2
@@ -20,7 +21,8 @@ provider = IBMQ.enable_account(token=token)
 backend = provider.get_backend("ibmq_armonk")
 # Use Aer's qasm_simulator
 simulator = Aer.get_backend('qasm_simulator')
-def randbin2(data, F):
+
+def randbin2(data, F): #real machine
     phi = data.const * F * data.t
 
     q = QuantumRegister(1)
@@ -30,7 +32,7 @@ def randbin2(data, F):
     circuit = QuantumCircuit(q, c)
 
     circuit.h(q)
-    circuit.u3(0, 0, math.pi - 2*phi, q)
+    circuit.rz(math.pi - phi, q)
     circuit.h(q)
 
     # Map the quantum measurement to the classical bits
@@ -48,22 +50,24 @@ def randbin2(data, F):
 
     return int(list(counts.keys())[0])
 
-'''
-def randbin3(data, F):
+def randbin4(data, F): # real machine 2
     phi = data.const * F * data.t
 
-    # Create a Quantum Circuit acting on the q register
-    circuit = QuantumCircuit(1)
+    q = QuantumRegister(1)
+    c = ClassicalRegister(1)
 
-    circuit.h(0)
-    circuit.u1(phi, 0)
-    circuit.h(0)
+    # Create a Quantum Circuit acting on the q register
+    circuit = QuantumCircuit(q, c)
+
+    circuit.h(q)
+    circuit.rz(2*phi, q)
+    circuit.h(q)
 
     # Map the quantum measurement to the classical bits
-    circuit.measure(0)
+    circuit.measure(q, c)
 
     # Execute the circuit on the qasm simulator
-    job = execute(circuit, simulator, shots=1000)
+    job = execute(circuit, backend=backend, shots=1)
     #job_monitor(job)
 
     # Grab results from the job
@@ -72,6 +76,33 @@ def randbin3(data, F):
     # Returns counts
     counts = result.get_counts(circuit)
 
-    return counts
-    
-'''
+    return int(list(counts.keys())[0])
+
+
+def randbin3(data, F): # simulator --- WORKS
+    phi = data.const * F * data.t
+
+    q = QuantumRegister(1)
+    c = ClassicalRegister(1)
+
+    # Create a Quantum Circuit acting on the q register
+    circuit = QuantumCircuit(q, c)
+
+    circuit.h(q)
+    circuit.rz(math.pi - 2 * phi, q)
+    circuit.h(q)
+
+    # Map the quantum measurement to the classical bits
+    circuit.measure(q, c)
+
+    # Execute the circuit on the qasm simulator
+    job = execute(circuit, simulator, shots=1)
+    #job_monitor(job)
+
+    # Grab results from the job
+    result = job.result()
+
+    # Returns counts
+    counts = result.get_counts(circuit)
+
+    return int(list(counts.keys())[0])
