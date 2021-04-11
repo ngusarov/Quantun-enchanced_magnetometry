@@ -1,6 +1,7 @@
-
-provider = IBMQ.get_provider(hub='ibm-q', group='open', project='main')
-backend = provider.get_backend('ibmq_16_melbourne')
+from qiskit import IBMQ
+token =
+provider = IBMQ.enable_account(token=token)
+backend = provider.get_backend("ibmq_armonk")
 
 backend_config = backend.configuration()
 #assert backend_config.open_pulse, "Backend doesn't support Pulse"

@@ -16,7 +16,7 @@ def randbin(data, F): # simple math
     return np.random.choice([0, 1], size=(1,1), p=[p_0, 1-p_0]).reshape(1)[0]
 
 
-
+token = 
 provider = IBMQ.enable_account(token=token)
 backend = provider.get_backend("ibmq_armonk")
 # Use Aer's qasm_simulator
@@ -106,3 +106,74 @@ def randbin3(data, F): # simulator --- WORKS
     counts = result.get_counts(circuit)
 
     return int(list(counts.keys())[0])
+
+
+
+
+
+
+
+#--------------------------------------------------------------------------
+#--------------------------------------------------------------------------
+
+#--------------------------------------------------------------------------
+
+#--------------------------------------------------------------------------
+
+
+def randbin2_(data, F): #real machine
+    phi = data.const * F * data.t
+
+    q = QuantumRegister(1)
+    c = ClassicalRegister(1)
+
+    # Create a Quantum Circuit acting on the q register
+    circuit = QuantumCircuit(q, c)
+
+    circuit.h(q)
+    circuit.rz(math.pi - 2*phi, q)
+    circuit.h(q)
+
+    # Map the quantum measurement to the classical bits
+    circuit.measure(q, c)
+
+    # Execute the circuit on the qasm simulator
+    job = execute(circuit, backend=backend, shots=10000)
+    #job_monitor(job)
+
+    # Grab results from the job
+    result = job.result()
+
+    # Returns counts
+    counts = result.get_counts(circuit)
+
+    return counts
+
+
+def randbin3_(data, F): # simulator --- WORKS
+    phi = data.const * F * data.t
+
+    q = QuantumRegister(1)
+    c = ClassicalRegister(1)
+
+    # Create a Quantum Circuit acting on the q register
+    circuit = QuantumCircuit(q, c)
+
+    circuit.h(q)
+    circuit.rz(math.pi - 2 * phi, q)
+    circuit.h(q)
+
+    # Map the quantum measurement to the classical bits
+    circuit.measure(q, c)
+
+    # Execute the circuit on the qasm simulator
+    job = execute(circuit, simulator, shots=1000)
+    #job_monitor(job)
+
+    # Grab results from the job
+    result = job.result()
+
+    # Returns counts
+    counts = result.get_counts(circuit)
+
+    return counts
