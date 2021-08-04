@@ -1,6 +1,10 @@
+import numpy as np
+'''
+
 from qiskit import IBMQ
-token =
-provider = IBMQ.enable_account(token=token)
+
+
+provider = IBMQ.enable_account()
 backend = provider.get_backend("ibmq_armonk")
 
 backend_config = backend.configuration()
@@ -19,7 +23,7 @@ ns = 1.0e-9 # Nanoseconds
 qubit = 0
 
 # The sweep will be centered around the estimated qubit frequency.
-center_frequency_Hz = backend_defaults.qubit_freq_est[qubit]        # The default frequency is given in Hz
+center_frequency_Hz = 4.97*GHz        # The default frequency is given in Hz
                                                                     # warning: this will change in a future release
 print(f"Qubit {qubit} has an estimated frequency of {center_frequency_Hz / GHz} GHz.")
 
@@ -136,6 +140,7 @@ fit_params, y_fit = fit_function(frequencies_GHz,
                                 )
 A, rough_qubit_frequency, B, C = fit_params
 rough_qubit_frequency = rough_qubit_frequency*GHz # make sure qubit freq is in Hz
+print("Rought cubit frequency: ", rough_qubit_frequency)
 
 # This experiment uses these values from the previous experiment:
     # `qubit`,
@@ -237,6 +242,8 @@ exc_results = gnd_exc_results.get_memory(1)[:, qubit]*scale_factor
 
 mean_gnd = np.mean(gnd_results) # takes mean of both real and imaginary parts
 mean_exc = np.mean(exc_results)
+print(mean_gnd)
+print(mean_exc)
 
 import math
 
@@ -292,11 +299,11 @@ fit_params, y_fit = fit_function(times_us, t1_values,
             )
 
 _, _, T1 = fit_params
-
+'''
 # Ramsey experiment parameters
 time_max_us = 1.8
 time_step_us = 0.025
-times_us = np.arange(0.1, time_max_us, time_step_us)
+times_us = np.arange(0.1, time_max_us, time_step_us) # here the only time t_of_interation`
 # Convert to units of dt
 delay_times_dt = times_us * us / dt
 
@@ -321,9 +328,10 @@ for delay in delay_times_dt:
     ramsey_schedules.append(this_schedule)
 
 # Execution settings
-num_shots = 256
+num_shots = 1
 
-detuning_MHz = 2
+import experiment
+detuning_MHz = 10**(-6)*experiment.ExperimentData.F_degree*(experiment.ExperimentData.const * experiment.ExperimentData.F)#2
 ramsey_frequency = round(rough_qubit_frequency + detuning_MHz * MHz, 6) # need ramsey freq in Hz
 ramsey_program = assemble(ramsey_schedules,
                              backend=backend,
@@ -354,3 +362,42 @@ fit_params, y_fit = fit_function(times_us, np.real(ramsey_values),
 _, del_f_MHz, _, _, = fit_params # freq is MHz since times in us
 
 precise_qubit_freq = rough_qubit_frequency + (del_f_MHz - detuning_MHz) * MHz # get new freq in Hz
+
+print()
+print()
+print(experiment.ExperimentData.t*10**6)
+
+print()
+
+#-----------------------------------------------------
+mean_gnd = (-17.93922008219648-9.25825521942528j)
+mean_exc = (-17.617234688081922-9.536411874099201j)
+
+'''
+two values above are constants for a single qubit. They are prepared beforehand.
+Then we get new time of interaction -> get new detuning variable. Using it we perform a single
+measurement for that particular time of interaction: above like we got series for ramsey_exp
+using it we get new electro-magnetic wave or just a comlex number, though using the classificator
+we recognize it as |0> or |1>
+'''
+
+time_max_us = 1.8
+time_step_us = 0.025
+times_us = np.arange(0.1, time_max_us, time_step_us)
+ramsey_values = [(-6.45491104677888-18.87569407115264j), (-6.78123125342208-18.86929725423616j), (-6.68924244918272-19.00267746361344j), (-6.78794952179712-18.75218423349248j), (-6.45172606009344-18.82045676519424j), (-6.39810003795968-18.8180770848768j), (-6.87344151691264-18.96514079162368j), (-6.349471612928-18.95663944073216j), (-6.79788498911232-18.76521140617216j), (-6.2908620865536-18.84539307687936j), (-6.51692030820352-19.09960816459776j), (-6.5232735043584-19.0565752766464j), (-6.5889730822144-18.92394937090048j), (-6.5848358207488-18.89148076032j), (-6.8046911700992-18.71561661349888j), (-6.21682289016832-18.95902717411328j), (-6.4058128596992-18.84977528569856j), (-6.53220703633408-19.04591436251136j), (-6.81624127668224-18.97284891574272j), (-6.7587719299071995-18.83858958024704j), (-6.6832073490432-18.71290675757056j), (-6.8959659360256-18.86253939163136j), (-6.8463691300864-18.73813163737088j), (-6.4353172717568-18.85306093568j), (-6.84037093982208-18.75181513474048j), (-6.71860123500544-18.90364491300864j), (-6.3409957634048-18.89888018366464j), (-6.4701400612864-19.01900236587008j), (-6.56952292016128-18.75743483101184j), (-6.92680648556544-18.818600534016j), (-6.84625705828352-18.7958372073472j), (-6.46090722377728-18.96315705360384j), (-6.34525918953472-18.97873302093824j), (-6.83992131043328-18.804977434624j), (-6.64976565993472-18.815983288319998j), (-6.89388690341888-18.75495985610752j), (-6.71836836724736-18.81849181765632j), (-6.61002446176256-18.84537965510656j), (-6.52606590418944-18.83091501056j), (-6.89085828038656-18.765215432704j), (-6.7106481635328-18.868126875648j), (-6.59166683201536-18.9497044107264j), (-6.68281610436608-18.76156739485696j), (-6.59609937248256-18.57842596282368j), (-6.82401986510848-18.93949983686656j), (-6.83791408431104-18.84781570686976j), (-6.84703283675136-18.87214401224704j), (-6.76177303830528-18.73196030623744j), (-6.8129656930304-18.8634695204864j), (-6.7749116116992-18.7547867152384j), (-6.81164499058688-18.75103264538624j), (-7.1198075518976-18.75809249787904j), (-6.87195505557504-18.87690203070464j), (-6.76094894145536-18.76900976787456j), (-6.89204946272256-18.77970557861888j), (-6.69290390880256-18.70739980419072j), (-6.45756654452736-18.9697833828352j), (-6.33589146320896-18.8075342823424j), (-6.91532080349184-19.04636667625472j), (-6.9660242345984-18.8390217613312j), (-6.45485333315584-18.99372648333312j), (-6.9389290307584-19.00093129097216j), (-7.1268304945152-18.6368227540992j), (-6.7540843757568-18.56635442036736j), (-7.00426353639424-18.78314557898752j), (-6.77350299664384-18.73336288149504j), (-6.63964228780032-18.73591033397248j), (-6.9116325003264-18.8114333073408j)]
+
+
+import math
+
+def classify(point: complex):
+    """Classify the given state as |0> or |1>."""
+    def distance(a, b):
+        return math.sqrt((np.real(a) - np.real(b))**2 + (np.imag(a) - np.imag(b))**2)
+    return int(distance(point, mean_exc) < distance(point, mean_gnd))
+
+
+def output(t):
+    for i in range(len(times_us)):
+        print(times_us[i])
+        if abs(t - times_us[i]) <= time_step_us/2:
+            return classify(ramsey_values[i])

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 
 
+
 def preparing_figure(fig_title, x_label, y_label):
     fig, ax = plt.subplots()
     font = {'fontname': 'Times New Roman'}
@@ -44,6 +45,7 @@ def fitting(x, y, deg, zero=False):
     else:
         z = np.polyfit(x, y, deg)
         p = np.poly1d(z)
+        t = 0
     return p
 
 
@@ -95,49 +97,4 @@ def plotting(sigma):
 
     plt.close()
 
-    print ("degrees of sigma: ", p_min, p, p_max)
-
-
-def plotting_sensitivity(sensitivity, dependence):
-    types_of_dots = [
-        '.',
-        'o',
-        'x',
-        'v',
-        '>'
-    ]
-    types_of_colors = [
-        'r',
-        'b',
-        'g',
-        'v',
-        'black'
-    ]
-
-    title = 'Sensitivity from' + dependence
-    x_label = dependence#r'$t_{sum} \, or \, N$'
-    y_label = r'$sensitivity, nT/\sqrt{Hz}$'
-    fig, ax = preparing_figure(title, x_label, y_label)
-    p = 0
-    approx = True
-    x = [math.log(each) for each in list(sensitivity.keys())]
-    y = [math.log(each) for each in list(sensitivity.values())]
-    x_p = np.linspace(min(x[180:]), max(x[180:]))
-    if approx:
-        p = fitting(x[180:], y[180:], 1)
-
-        ax.plot(x_p, p(x_p), c=types_of_colors[0], ls='-', label=r'$sensitivity$')
-        ax.plot(x, y, types_of_dots[2], c=types_of_colors[0])
-    else:
-        ax.plot(x, y, types_of_dots[2], c=types_of_colors[0], label=r'$\sigma(t_{sum})$')
-
-    plt.legend(loc='best')
-
-    plt.show()
-
-    #fig.savefig('sigma_' + '.png', dpi=500)
-    #fig.savefig('files_to_send\\' + str(user_id) + '.pdf', dpi=500)
-
-    plt.close()
-
-    print(p)
+    return (p_min, p, p_max)
