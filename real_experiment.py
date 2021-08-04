@@ -10,7 +10,7 @@ phi = data.const * data.F * data.t * data.F_degree
 print("angle: ", phi)
 print(data.const * data.F_min * data.t * data.F_degree)
 print(data.const * data.F_max * data.t * data.F_degree)
-print("probability: ", (math.cos(phi))**2)
+print("probability: ", (math.cos(phi/2))**2)
 
 IBMQ.disable_account()
 tken

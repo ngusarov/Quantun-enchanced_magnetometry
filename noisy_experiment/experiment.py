@@ -24,7 +24,7 @@ class ExperimentData:
         self.mu = 10 ** (5) * 927 * 10**(-26)  # magnetic moment of the qubit
         self.h = 6.62 * 10 ** (-34)  # plank's constant
         self.const = self.mu/self.h  # mu/h
-        self.t = math.pi/4/(self.const*self.F_degree*(self.F_max - self.F_min)/2) * 10**(-1)  # time of interaction in seconds
+        self.t = math.pi/4/(0.5*self.const*self.F_degree*(self.F_max - self.F_min)/2) * 10**(-1)  # time of interaction in seconds
         self.probability_distribution = [1 / self.fields_number] * self.fields_number
         
     

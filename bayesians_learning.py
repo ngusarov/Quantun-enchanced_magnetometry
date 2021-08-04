@@ -17,8 +17,8 @@ def P_qubit_state_on_F_i(qubit_state, F_i, data):
     :param F_i: field in Tesla
     :return: based on (1), (2) in ReadMe.md we return conditional probability
     '''
-    if qubit_state == 1: return ( math.cos(data.const*F_i*data.F_degree*data.t) )**2
-    else: return ( math.sin(data.const*F_i*data.F_degree*data.t) )**2
+    if qubit_state == 1: return ( math.cos(data.const*F_i*data.F_degree*data.t/2) )**2
+    else: return ( math.sin(data.const*F_i*data.F_degree*data.t/2) )**2
 
 
 def rect_integral_of_multiplication_probabilities(P_F_i,

@@ -12,7 +12,7 @@ print(phi)
 print(data.const * data.F_min * data.t * data.F_degree)
 print(data.const * data.F_max * data.t * data.F_degree)
 print(data.t)
-print((math.sin(phi))**2)
+print((math.sin(phi/2))**2)
 
 count = 0
 count_sim = 0
@@ -32,4 +32,4 @@ for i in range(1, N):
     if qubit.randbin3(data, data.F) == 0:
         count_sim += 1
     print("simulator: ", count_sim / i)
-    print("ideal: ", (math.sin(phi))**2)
+    print("ideal: ", (math.sin(phi/2))**2)

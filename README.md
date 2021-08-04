@@ -1,7 +1,6 @@
 # Qubit Magnetometry
 
-
-# Magnetometry with t_{i+1} = 2 \cdot t_i, \phi -- const
+# Magnetometry with $t_{i+1} = 2 \cdot t_i$, $\phi = \mu / h_{plank} \cdot F \cdot t 
 
 Initially we have a range of fields, each field has the same probability to be the real one. The actual field to be measured lies in this range.
 
@@ -15,9 +14,9 @@ To 1 -- with P_1.
 
 We can get P_1 and P_0 from equations:
 
-$$sin^2 \phi = P_0 = sin^2 (\mu * F * t / \pi)$$ (1)
+$$sin^2 (\phi/2) = P_0 = sin^2 (1/2 \cdot \mu * F * t / h)$$ (1)
 
-$$cos^2 \phi = P_1 = cos^2 (\mu * F * t / \pi)$$ (2)
+$$cos^2 (\phi/2) = P_1 = cos^2 (1/2 \cdot \mu * F * t / h)$$ (2)
 
 The whole thing is driven by experiment.py -- it calls all other functions in perform() func.
 

@@ -15,7 +15,7 @@ from qiskit import IBMQ
 def randbin(data, F): # simple math
     phi = data.const * F * data.t * data.F_degree
 
-    p_0 = (math.sin(phi)) ** 2
+    p_0 = (math.sin(phi/2)) ** 2
     return np.random.choice([0, 1], size=(1,1), p=[p_0, 1-p_0]).reshape(1)[0]
 
 
