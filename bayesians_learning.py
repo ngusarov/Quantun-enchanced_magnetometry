@@ -46,6 +46,13 @@ def rect_integral_of_multiplication_probabilities(P_F_i,
     return integral
 
 
+def integrate_distribution(data):
+    integral = 0
+    for i in range(data.fields_number):
+        integral += data.probability_distribution[i] * data.delta_F / data.gained_degree
+    return integral
+
+
 def reaccount_P_F_i(i, new_qubit_state, F_i, old_distr, data):
     '''
     :param new_qubit_state: 1 or 0
@@ -68,14 +75,15 @@ def renew_probalities(new_qubit_state, data):
     old_distr = data.probability_distribution # saving current meanings to reaccount all P(F_i) at once
     for i in range(data.fields_number):
         data.probability_distribution[i] = reaccount_P_F_i(i, new_qubit_state, data.F_min + data.delta_F*i, old_distr, data)
-    data.probability_distribution = normalise(data.probability_distribution)
+    data.probability_distribution = normalise(data)
 
 
-def normalise(arr):
-    s = sum(arr)
-    for i in range(len(arr)):
-        arr[i] = arr[i] / s
-    return arr
+def normalise(data):
+    local_data = data
+    s = integrate_distribution(local_data)
+    for i in range(local_data.fields_number):
+        local_data.probability_distribution[i] = local_data.probability_distribution[i] / s
+    return local_data.probability_distribution
 
 #arr = []
 #print(normalise(arr), sum(normalise(arr)))

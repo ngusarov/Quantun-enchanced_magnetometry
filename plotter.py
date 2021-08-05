@@ -120,11 +120,11 @@ def plotting_sensitivity(sensitivity, dependence):
     fig, ax = preparing_figure(title, x_label, y_label)
     p = 0
     approx = True
-    x = [math.log(each) for each in list(sensitivity.keys())]
-    y = [math.log(each) for each in list(sensitivity.values())]
-    x_p = np.linspace(min(x[180:]), max(x[180:]))
+    x = [each for each in list(sensitivity.keys())]
+    y = [each for each in list(sensitivity.values())]
+    x_p = np.linspace(min(x[:]), max(x[:]))
     if approx:
-        p = fitting(x[180:], y[180:], 1)
+        p = fitting(x[:], y[:], 1)
 
         ax.plot(x_p, p(x_p), c=types_of_colors[0], ls='-', label=r'$sensitivity$')
         ax.plot(x, y, types_of_dots[2], c=types_of_colors[0])

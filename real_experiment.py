@@ -5,17 +5,17 @@ from qiskit.providers.ibmq import least_busy
 import math
 data = experiment.ExperimentData()
 print("time: ", experiment.ExperimentData.t*10**6 )
-print("detuning: ", 10**(-6)*experiment.ExperimentData.F_degree*(experiment.ExperimentData.const * experiment.ExperimentData.F))
+print("detuning: ", 10**(-6)*data.F_degree*(data.const * data.F))
 phi = data.const * data.F * data.t * data.F_degree
 print("angle: ", phi)
 print(data.const * data.F_min * data.t * data.F_degree)
 print(data.const * data.F_max * data.t * data.F_degree)
 print("probability: ", (math.cos(phi/2))**2)
 
-IBMQ.disable_account()
-tken
-IBMQ.enable_account(tken)
-provider = IBMQ.get_provider(hub='ibm-q')
+#IBMQ.disable_account()
+token ='d450d58f70726aa812595264cebdcc1b954e95cde187217ab4cbe3be5c27a3d330fb6a8fd34007762796f423d2fd7078952738e351a7828397cc184e48d86a6e'
+provider = IBMQ.enable_account(token)
+#provider = IBMQ.get_provider(hub='ibm-q')
 #provider = IBMQ.load_account()
 backend = provider.get_backend("ibmq_armonk")
 #backend = least_busy(provider.backends(filters=lambda x: not x.configuration().simulator
@@ -160,17 +160,18 @@ fit_params, y_fit = fit_function(drive_amps,
 
 drive_period = fit_params[2] # get period of rabi oscillation
 
-pi_amp = abs(drive_period / 2)'''
+pi_amp = abs(drive_period / 2)
+'''
 pi_amp = 0.1409737344919153
 print(pi_amp)
-'''
+
 pi_pulse = pulse_lib.gaussian(duration=drive_samples,
                               amp=pi_amp,
                               sigma=drive_sigma,
                               name='pi_pulse')
 
 # Create two schedules
-
+'''
 # Ground state schedule
 gnd_schedule = pulse.Schedule(name="ground state")
 gnd_schedule += measure

@@ -12,18 +12,17 @@ import plotter
 
 @dataclass
 class ExperimentData:
-    F = 40
+    F = 50
     F_min = 1  # min field Tesla
     F_max = 100 # max field Tesla
     F_degree = 10**(-9)
-    gained_degree = 1
     delta_F = 1  # accuracy of F defining
     fields_number = round( (F_max - F_min + delta_F) / delta_F ) # amount of discrete F meanings
     time_const = 2
     mu = 10 ** (5) * 927 * 10**(-26)  # magnetic moment of the qubit
     h = 6.62 * 10 ** (-34)  # plank's constant
     const = mu/h  # mu/h
-    t = 3.14/4/(0.5*const*F_degree*(F_max - F_min)/2) * 2**(0)  # time of interaction in seconds
+    t = 3.14/4/(0.5*const*F_degree*(F_max - F_min)/2) #* 2**(1)  # time of interaction in seconds
 
     probability_distribution = [1 / fields_number] * fields_number
 
@@ -76,40 +75,10 @@ def find_sigma_2(x_peak, y_peak, data):
     return 1/((2*3.1415)**(0.5)*y_peak)
 # work with distribution -----------
 
-# enlarging field segment ----------
-def expand(x_peak, y_peak, sigma, data):
-    en_param = 10
-
-    new_F_min = (x_peak - (en_param//2)*data.delta_F)*10
-    start_ind = int(round((new_F_min//10 - data.F_min) / data.delta_F))
-    data.F_min = new_F_min + 1
-    data.F_max = (x_peak + (en_param//2)*data.delta_F)*10
-    data.F_degree /= 10
-    data.F *= 10
-    data.gained_degree *= 10
-    data.fields_number = int(round( (data.F_max - data.F_min + data.delta_F) / data.delta_F ))
-    new_distr = [0] * data.fields_number
-
-    for i in range(start_ind+1, start_ind + en_param + 1):
-        new_distr[(i - start_ind)*en_param - 1] = data.probability_distribution[i]
-
-    for i in range(start_ind, start_ind + en_param):
-        for j in range(1, en_param):
-            new_distr[(i - start_ind) * en_param + j - 1] = j/10*(data.probability_distribution[i+1] - data.probability_distribution[i]) + \
-                data.probability_distribution[i]
-    data.probability_distribution = new_distr
-    '''
-    integral = bayesians_learning.integrate_distribution(data)
-    print(integral)
-    k = 1 / integral
-    data.probability_distribution = list(map(lambda x: k*x, data.probability_distribution))
-    '''
-
-# enlarging field segment ----------
-
 
 def perform():
     experimentData = ExperimentData()
+    F = experimentData.F
     sigma = {}
     a_from_t_sum = {} #sensitivity
     a_from_step = {} #sensitivity
@@ -120,21 +89,19 @@ def perform():
     flag = False
     prev_step = 0
     #
-    fig, ax = plt.subplots()
-    ax.minorticks_on()
 
     print(experimentData.probability_distribution) # initial
     print(experimentData.fields_number)
     for step in range(N):
 
-        bayesians_learning.renew_probalities(qubit.randbin(experimentData, experimentData.F), experimentData)
+        bayesians_learning.renew_probalities(qubit.randbin(experimentData, F), experimentData)
         #bayesians_learning.renew_probalities(qubit.randbin3(experimentData, F), experimentData)
         #bayesians_learning.renew_probalities(qubit.randbin2(experimentData, F), experimentData)
         #bayesians_learning.renew_probalities(ramsey_qubit.output(experimentData.t), experimentData)
         t_sum += experimentData.t
 
         x_peak, y_peak = find_peak(experimentData)
-        current_sigma = find_sigma(x_peak, y_peak, experimentData) / experimentData.gained_degree
+        current_sigma = find_sigma_2(x_peak, y_peak, experimentData)
 
         a_from_t_sum[t_sum] = current_sigma * (t_sum)**0.5
         a_from_step[step] = current_sigma * (t_sum) ** 0.5
@@ -147,7 +114,7 @@ def perform():
 
         if flag and \
                 step - prev_step >= 2 and \
-                prev_sigma + experimentData.delta_F/experimentData.gained_degree > 2 * current_sigma:# and \
+                prev_sigma + experimentData.delta_F > 2 * current_sigma:# and \
                 #experimentData.const * F * experimentData.F_degree * experimentData.t <= 3.14:
             prev_sigma = current_sigma
             prev_step = step
@@ -157,28 +124,14 @@ def perform():
         if flag and prev_sigma < current_sigma:
             prev_sigma = current_sigma
 
-        if (step) % 1 == 0:
+        if (step) % 5 == 0:
             plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], experimentData.probability_distribution) # distr each 50 steps
 
         if (step + 1) % 1 == 0:
-            print(bayesians_learning.integrate_distribution(experimentData), x_peak, y_peak, step, current_sigma, prev_sigma, t_sum, experimentData.const * experimentData.F * experimentData.t*experimentData.F_degree, flag) # checking ~ 1
-
-        if flag and current_sigma*experimentData.gained_degree <= 1*experimentData.delta_F:
-            plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
-                     experimentData.probability_distribution)
-            plt.show()
-            plt.close()
-
-            fig, ax = plt.subplots()
-            ax.minorticks_on()
-
-            expand(x_peak, y_peak, current_sigma, experimentData)
-            plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
-                     experimentData.probability_distribution)
-            print(experimentData.probability_distribution)
+            print(sum(experimentData.probability_distribution), x_peak, y_peak, step, current_sigma, prev_sigma, t_sum, experimentData.const * F * experimentData.t*experimentData.F_degree, flag) # checking ~ 1
 
         if y_peak >= 1.0 - epsilon or t_sum >= 8*10**(-6):
-            pass
+            break
 
     plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], experimentData.probability_distribution) # final distr
     plt.show()
