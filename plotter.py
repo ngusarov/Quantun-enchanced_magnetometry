@@ -113,31 +113,38 @@ def plotting_sensitivity(sensitivity, dependence):
         'v',
         'black'
     ]
-
-    title = 'Sensitivity from' + dependence
+    step_delay = 5
+    title = 'Sensitivity from ' + dependence
     x_label = dependence#r'$t_{sum} \, or \, N$'
     y_label = r'$sensitivity, nT/\sqrt{Hz}$'
     fig, ax = preparing_figure(title, x_label, y_label)
     p = 0
     approx = True
-    x = [math.log(each) for each in list(sensitivity.keys())]
-    y = [math.log(each) for each in list(sensitivity.values())]
-    x_p = np.linspace(min(x[180:]), max(x[180:]))
+    x = [math.log(each)/math.log(10) for each in list(sensitivity.keys())[step_delay:]]
+    y = [math.log(each)/math.log(10) for each in list(sensitivity.values())[step_delay:]]
+    x_p = np.linspace(min(x[:]), max(x[:]))
     if approx:
-        p = fitting(x[180:], y[180:], 1)
+        p = fitting(x[:], y[:], 1)
 
         ax.plot(x_p, p(x_p), c=types_of_colors[0], ls='-', label=r'$sensitivity$')
         ax.plot(x, y, types_of_dots[2], c=types_of_colors[0])
     else:
         ax.plot(x, y, types_of_dots[2], c=types_of_colors[0], label=r'$\sigma(t_{sum})$')
 
+    p_min = fitting([math.log(each) for each in list(sensitivity.keys())[step_delay:]],
+                    [math.log(1 / each) for each in list(sensitivity.keys())[step_delay:]], 1)
+    plt.plot(x_p, p_min(x_p) + p(x_p[0]) - p_min(x_p[0]), label=r'$\frac{1}{ t_{sum} }$')
+
+    p_max = fitting([math.log(each) for each in list(sensitivity.keys())[step_delay:]],
+                    [math.log((1 / each) ** 0.5) for each in list(sensitivity.keys())[step_delay:]], 1)
+    plt.plot(x_p, p_max(x_p) + p(x_p[0]) - p_max(x_p[0]), label=r'$\frac{1}{ \sqrt{ t_{sum} } }$')
+
     plt.legend(loc='best')
 
     plt.show()
 
+    print("degrees of sensitivity from "+dependence+":", p_min, p, p_max)
     #fig.savefig('sigma_' + '.png', dpi=500)
     #fig.savefig('files_to_send\\' + str(user_id) + '.pdf', dpi=500)
 
     plt.close()
-
-    print(p)
