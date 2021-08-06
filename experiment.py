@@ -2,7 +2,6 @@ from dataclasses import dataclass
 import matplotlib.pyplot as plt
 
 import bayesians_learning
-import qubit
 import plotter
 #import ramsey_qubit
 
@@ -12,8 +11,8 @@ import plotter
 
 @dataclass
 class ExperimentData:
-    F = 40
-    F_min = 1  # min field Tesla
+    F = 20
+    F_min = 0  # min field Tesla
     F_max = 100 # max field Tesla
     F_degree = 10**(-9)
     gained_degree = 1
@@ -23,7 +22,8 @@ class ExperimentData:
     mu = 10 ** (5) * 927 * 10**(-26)  # magnetic moment of the qubit
     h = 6.62 * 10 ** (-34)  # plank's constant
     const = mu/h  # mu/h
-    t = 3.14/4/(0.5*const*F_degree*(F_max - F_min)/2) * 2**(0)  # time of interaction in seconds
+    t = 3.14/4/(0.5*const*F_degree*(F_max - F_min)/2) * 2**(-1)  # time of interaction in seconds
+    num_of_repetitions = 5  # repetitions for one experiment
 
     probability_distribution = [1 / fields_number] * fields_number
 
@@ -55,7 +55,7 @@ def find_sigma(x_peak, y_peak, data):
     :param data:
     :return: sigma
     """
-    y_sigma = y_peak / (2**0.5)
+    y_sigma = y_peak / (2.81**0.5)
     epsilon = max([ abs( data.probability_distribution[i] - data.probability_distribution[i-1] )/2 for i in range(1, data.fields_number) ])
     x_sigma = []
     for i in range(1, data.fields_number):
@@ -113,7 +113,7 @@ def perform():
     sigma = {}
     a_from_t_sum = {} #sensitivity
     a_from_step = {} #sensitivity
-    N = 90
+    N = 25
     t_sum = 0
     epsilon = 10 ** (-3)
     prev_sigma = experimentData.F_max - experimentData.F_min
@@ -127,11 +127,13 @@ def perform():
     print(experimentData.fields_number)
     for step in range(N):
 
-        bayesians_learning.renew_probalities(qubit.randbin(experimentData, experimentData.F), experimentData)
+        bayesians_learning.renew_probalities(experimentData)
         #bayesians_learning.renew_probalities(qubit.randbin3(experimentData, F), experimentData)
         #bayesians_learning.renew_probalities(qubit.randbin2(experimentData, F), experimentData)
         #bayesians_learning.renew_probalities(ramsey_qubit.output(experimentData.t), experimentData)
-        t_sum += experimentData.t
+        t_sum += experimentData.t * experimentData.num_of_repetitions
+
+
 
         x_peak, y_peak = find_peak(experimentData)
         current_sigma = find_sigma(x_peak, y_peak, experimentData) / experimentData.gained_degree
@@ -146,8 +148,8 @@ def perform():
             flag = True
 
         if flag and \
-                step - prev_step >= 2 and \
-                prev_sigma + experimentData.delta_F/experimentData.gained_degree > 2 * current_sigma:# and \
+                step - prev_step >= 2: # and \
+                #prev_sigma + experimentData.delta_F/experimentData.gained_degree > 2 * current_sigma:# and \
                 #experimentData.const * F * experimentData.F_degree * experimentData.t <= 3.14:
             prev_sigma = current_sigma
             prev_step = step
@@ -158,14 +160,14 @@ def perform():
             prev_sigma = current_sigma
 
         if (step) % 1 == 0:
-            plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], experimentData.probability_distribution) # distr each 50 steps
+            plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], [each for each in experimentData.probability_distribution]) # distr each 50 steps
 
         if (step + 1) % 1 == 0:
             print(bayesians_learning.integrate_distribution(experimentData), x_peak, y_peak, step, current_sigma, prev_sigma, t_sum, experimentData.const * experimentData.F * experimentData.t*experimentData.F_degree, flag) # checking ~ 1
 
-        if flag and current_sigma*experimentData.gained_degree <= 1*experimentData.delta_F:
+        if flag and current_sigma*experimentData.gained_degree <= 3*experimentData.delta_F:
             plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
-                     experimentData.probability_distribution)
+                     [each for each in experimentData.probability_distribution])
             plt.show()
             plt.close()
 
@@ -174,20 +176,26 @@ def perform():
 
             expand(x_peak, y_peak, current_sigma, experimentData)
             plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
-                     experimentData.probability_distribution)
+                     [each/10 for each in experimentData.probability_distribution])
             print(experimentData.probability_distribution)
 
-        if y_peak >= 1.0 - epsilon or t_sum >= 8*10**(-6):
-            pass
+        if y_peak >= 1.0 - epsilon or t_sum >= 8*10**(-5):
+            break
 
-    plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], experimentData.probability_distribution) # final distr
+    #plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], experimentData.probability_distribution) # final distr
     plt.show()
     #fig.savefig('distr_' + '.png', dpi=500)
     plt.close()
     print(list(sigma.keys())[-1], list(sigma.values())[-1])
 
-    plotter.plotting_sensitivity(a_from_step, r'$N$')
-    plotter.plotting_sensitivity(a_from_t_sum, r'$t_{sum}$')
+    try:
+        plotter.plotting_sensitivity(a_from_step, r'$N$')
+    except Exception:
+        pass
+    try:
+        plotter.plotting_sensitivity(a_from_t_sum, r'$t_{sum}$')
+    except Exception:
+        pass
 
     x_peak, y_peak = find_peak(experimentData)
 

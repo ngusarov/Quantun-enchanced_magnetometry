@@ -1,4 +1,5 @@
 import math
+import qubit
 from sklearn import preprocessing
 import numpy as np
 
@@ -17,8 +18,14 @@ def P_qubit_state_on_F_i(qubit_state, F_i, data):
     :param F_i: field in Tesla
     :return: based on (1), (2) in ReadMe.md we return conditional probability
     '''
+    '''
     if qubit_state == 1: return ( math.cos(data.const*F_i*data.F_degree*data.t/2) )**2
     else: return ( math.sin(data.const*F_i*data.F_degree*data.t/2) )**2
+    '''
+    p_1 = ( math.cos(data.const*F_i*data.F_degree*data.t/2) )**2
+    p_0 = ( math.sin(data.const*F_i*data.F_degree*data.t/2) )**2
+    return (sum(qubit_state)*p_1 + (data.num_of_repetitions - sum(qubit_state))*p_0)/data.num_of_repetitions
+
 
 
 def rect_integral_of_multiplication_probabilities(P_F_i,
@@ -49,7 +56,7 @@ def rect_integral_of_multiplication_probabilities(P_F_i,
 def integrate_distribution(data):
     integral = 0
     for i in range(data.fields_number):
-        integral += data.probability_distribution[i] * data.delta_F / data.gained_degree
+        integral += data.probability_distribution[i] * data.delta_F # / data.gained_degree
     return integral
 
 
@@ -66,14 +73,18 @@ def reaccount_P_F_i(i, new_qubit_state, F_i, old_distr, data):
                                  new_qubit_state, old_distr, data)
 
 
-def renew_probalities(new_qubit_state, data):
+def renew_probalities(data):
     '''
     :param new_qubit_state: 0 or 1
     :param distr: current distribution of all fields
     :return: new distribution of all fields
     '''
+
+    #new_qubit_state = int(round(sum([qubit.randbin(data, data.F) for i in range(data.num_of_repetitions)])/data.num_of_repetitions))
+    new_qubit_state = [qubit.randbin(data, data.F) for i in range(data.num_of_repetitions)]
     old_distr = data.probability_distribution # saving current meanings to reaccount all P(F_i) at once
-    for i in range(data.fields_number):
+
+    for i in range(data.fields_number-1, 0, -1):
         data.probability_distribution[i] = reaccount_P_F_i(i, new_qubit_state, data.F_min + data.delta_F*i, old_distr, data)
     data.probability_distribution = normalise(data)
 
