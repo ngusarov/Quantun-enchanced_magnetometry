@@ -73,6 +73,22 @@ def reaccount_P_F_i(i, new_qubit_state, F_i, old_distr, data):
                                  new_qubit_state, old_distr, data)
 
 
+def remove_peaks(data, x_subs):
+    '''
+    :param new_qubit_state: 0 or 1
+    :param distr: current distribution of all fields
+    :return: new distribution of all fields
+    '''
+
+    #new_qubit_state = int(round(sum([qubit.randbin(data, data.F) for i in range(data.num_of_repetitions)])/data.num_of_repetitions))
+    new_qubit_state = [qubit.randbin(data, data.F) for i in range(data.num_of_repetitions)]
+    old_distr = data.probability_distribution # saving current meanings to reaccount all P(F_i) at once
+
+    for i in x_subs:
+        data.probability_distribution[i] = reaccount_P_F_i(i, new_qubit_state, data.F_min + data.delta_F*i, old_distr, data)
+    data.probability_distribution = normalise(data)
+
+
 def renew_probalities(data):
     '''
     :param new_qubit_state: 0 or 1
@@ -84,8 +100,15 @@ def renew_probalities(data):
     new_qubit_state = [qubit.randbin(data, data.F) for i in range(data.num_of_repetitions)]
     old_distr = data.probability_distribution # saving current meanings to reaccount all P(F_i) at once
 
-    for i in range(data.fields_number-1, 0, -1):
-        data.probability_distribution[i] = reaccount_P_F_i(i, new_qubit_state, data.F_min + data.delta_F*i, old_distr, data)
+    if data.reverse:
+        for i in range(data.fields_number-1, -1, -1):
+            data.probability_distribution[i] = reaccount_P_F_i(i, new_qubit_state, data.F_min + data.delta_F*i, old_distr, data)
+        data.reverse = False
+    else:
+        for i in range(data.fields_number):
+            data.probability_distribution[i] = reaccount_P_F_i(i, new_qubit_state, data.F_min + data.delta_F*i, old_distr, data)
+        data.reverse = True
+
     data.probability_distribution = normalise(data)
 
 

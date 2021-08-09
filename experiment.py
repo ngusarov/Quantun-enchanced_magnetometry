@@ -11,7 +11,7 @@ import plotter
 
 @dataclass
 class ExperimentData:
-    F = 20
+    F = 40
     F_min = 0  # min field Tesla
     F_max = 100 # max field Tesla
     F_degree = 10**(-9)
@@ -22,8 +22,9 @@ class ExperimentData:
     mu = 10 ** (5) * 927 * 10**(-26)  # magnetic moment of the qubit
     h = 6.62 * 10 ** (-34)  # plank's constant
     const = mu/h  # mu/h
-    t = 3.14/4/(0.5*const*F_degree*(F_max - F_min)/2) * 2**(-1)  # time of interaction in seconds
-    num_of_repetitions = 5  # repetitions for one experiment
+    reverse = False
+    t = 3.14/4/(0.5*const*F_degree*(F_max - F_min)/2) * 2**(1)  # time of interaction in seconds
+    num_of_repetitions = 2  # repetitions for one experiment
 
     probability_distribution = [1 / fields_number] * fields_number
 
@@ -46,6 +47,26 @@ def find_peak(data):
             x_max = data.F_min + data.delta_F*i
             y_max = data.probability_distribution[i]
     return x_max, y_max
+
+
+def localise_peak(data):
+    left_ind = 0
+    right_ind = data.fields_number-1
+    for i in range(1, data.fields_number-1):
+        if (data.probability_distribution[i+1] - data.probability_distribution[i])*0.5 > \
+                data.probability_distribution[i] - data.probability_distribution[i-1]:
+            left_ind = i-1
+            break
+
+    for i in range(data.fields_number-2, 0, -1):
+        if (data.probability_distribution[i-1] - data.probability_distribution[i])*0.5 > \
+                data.probability_distribution[i] - data.probability_distribution[i+1]:
+            right_ind = i+1
+            break
+    return left_ind, right_ind
+
+
+
 
 
 def find_sigma(x_peak, y_peak, data):
@@ -78,7 +99,7 @@ def find_sigma_2(x_peak, y_peak, data):
 
 # enlarging field segment ----------
 def expand(x_peak, y_peak, sigma, data):
-    en_param = 10
+    en_param = 20
 
     new_F_min = (x_peak - (en_param//2)*data.delta_F)*10
     start_ind = int(round((new_F_min//10 - data.F_min) / data.delta_F))
@@ -91,11 +112,11 @@ def expand(x_peak, y_peak, sigma, data):
     new_distr = [0] * data.fields_number
 
     for i in range(start_ind+1, start_ind + en_param + 1):
-        new_distr[(i - start_ind)*en_param - 1] = data.probability_distribution[i]
+        new_distr[(i - start_ind)*10 - 1] = data.probability_distribution[i]
 
     for i in range(start_ind, start_ind + en_param):
-        for j in range(1, en_param):
-            new_distr[(i - start_ind) * en_param + j - 1] = j/10*(data.probability_distribution[i+1] - data.probability_distribution[i]) + \
+        for j in range(1, 10):
+            new_distr[(i - start_ind) * 10 + j - 1] = j/10*(data.probability_distribution[i+1] - data.probability_distribution[i]) + \
                 data.probability_distribution[i]
     data.probability_distribution = new_distr
     '''
@@ -136,6 +157,7 @@ def perform():
 
 
         x_peak, y_peak = find_peak(experimentData)
+        left_peak_side, right_peak_side = localise_peak(experimentData)
         current_sigma = find_sigma(x_peak, y_peak, experimentData) / experimentData.gained_degree
 
         a_from_t_sum[t_sum] = current_sigma * (t_sum)**0.5
@@ -148,7 +170,7 @@ def perform():
             flag = True
 
         if flag and \
-                step - prev_step >= 2: # and \
+                step - prev_step >= 1: # and \
                 #prev_sigma + experimentData.delta_F/experimentData.gained_degree > 2 * current_sigma:# and \
                 #experimentData.const * F * experimentData.F_degree * experimentData.t <= 3.14:
             prev_sigma = current_sigma
@@ -165,7 +187,7 @@ def perform():
         if (step + 1) % 1 == 0:
             print(bayesians_learning.integrate_distribution(experimentData), x_peak, y_peak, step, current_sigma, prev_sigma, t_sum, experimentData.const * experimentData.F * experimentData.t*experimentData.F_degree, flag) # checking ~ 1
 
-        if flag and current_sigma*experimentData.gained_degree <= 3*experimentData.delta_F:
+        if flag and current_sigma*experimentData.gained_degree <= 7*experimentData.delta_F:
             plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
                      [each for each in experimentData.probability_distribution])
             plt.show()
@@ -179,7 +201,7 @@ def perform():
                      [each/10 for each in experimentData.probability_distribution])
             print(experimentData.probability_distribution)
 
-        if y_peak >= 1.0 - epsilon or t_sum >= 8*10**(-5):
+        if y_peak >= 1.0 - epsilon or t_sum >= 100*10**(-3):
             break
 
     #plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], experimentData.probability_distribution) # final distr
@@ -196,6 +218,8 @@ def perform():
         plotter.plotting_sensitivity(a_from_t_sum, r'$t_{sum}$')
     except Exception:
         pass
+
+    print("final sensitivity: ", a_from_t_sum[t_sum]*10**(-9))
 
     x_peak, y_peak = find_peak(experimentData)
 
