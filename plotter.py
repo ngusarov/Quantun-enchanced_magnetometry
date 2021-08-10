@@ -113,7 +113,7 @@ def plotting_sensitivity(sensitivity, dependence):
         'v',
         'black'
     ]
-    step_delay = 5
+    step_delay = 3
     title = 'Sensitivity from ' + dependence
     x_label = dependence#r'$t_{sum} \, or \, N$'
     y_label = r'$sensitivity, nT/\sqrt{Hz}$'

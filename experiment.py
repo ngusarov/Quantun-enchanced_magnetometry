@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
 
@@ -6,12 +7,15 @@ import plotter
 #import ramsey_qubit
 
 # constants start ---------------------
-#F = 20  # field strength to be measured in Tesla
+
+
+def gaussian(in_s, F_min, delta_F, in_cen, i):
+    return 1 / (in_s * (2 * math.pi) ** 0.5) * math.exp(-(F_min + i * delta_F - in_cen) ** 2 / (2 * in_s ** 2))
 
 
 @dataclass
 class ExperimentData:
-    F = 40
+    F = 80
     F_min = 0  # min field Tesla
     F_max = 100 # max field Tesla
     F_degree = 10**(-9)
@@ -22,11 +26,16 @@ class ExperimentData:
     mu = 10 ** (5) * 927 * 10**(-26)  # magnetic moment of the qubit
     h = 6.62 * 10 ** (-34)  # plank's constant
     const = mu/h  # mu/h
-    reverse = False
-    t = 3.14/4/(0.5*const*F_degree*(F_max - F_min)/2) * 2**(1)  # time of interaction in seconds
-    num_of_repetitions = 2  # repetitions for one experiment
+    t = math.pi/(const*F_degree*F_max/2)*2**(-3)
+    t_init = t # time of interaction in seconds
+    num_of_repetitions = 1  # repetitions for one experiment
+    in_s = (F_max - F_min) / 2
+    in_cen = F_min  # (F_max + F_min)/2
+    probability_distribution = [ gaussian(50, 0, 1, 40, i)
+         for i in
+        range(fields_number)]
 
-    probability_distribution = [1 / fields_number] * fields_number
+    #probability_distribution = [1 / fields_number] * fields_number
 
 
 # constants end -----------------------
@@ -49,24 +58,30 @@ def find_peak(data):
     return x_max, y_max
 
 
-def localise_peak(data):
-    left_ind = 0
-    right_ind = data.fields_number-1
-    for i in range(1, data.fields_number-1):
-        if (data.probability_distribution[i+1] - data.probability_distribution[i])*0.5 > \
-                data.probability_distribution[i] - data.probability_distribution[i-1]:
-            left_ind = i-1
-            break
-
-    for i in range(data.fields_number-2, 0, -1):
-        if (data.probability_distribution[i-1] - data.probability_distribution[i])*0.5 > \
-                data.probability_distribution[i] - data.probability_distribution[i+1]:
-            right_ind = i+1
-            break
-    return left_ind, right_ind
+def find_num_of_peaks(data, y_peak):
+    num = 0
+    on_peak = False
+    for i in range(data.fields_number):
+        if data.probability_distribution[i] >= 0.6*y_peak:
+            if not on_peak:
+                num += 1
+                on_peak = True
+        else:
+            on_peak = False
+    return num
 
 
-
+def pseudo_entropy_count(data, y_peak):
+    num = 0
+    on_peak = False
+    for i in range(data.fields_number):
+        if data.probability_distribution[i] >= 0.2*y_peak:
+            if not on_peak:
+                num += 1
+                on_peak = True
+        else:
+            on_peak = False
+    return num
 
 
 def find_sigma(x_peak, y_peak, data):
@@ -85,7 +100,8 @@ def find_sigma(x_peak, y_peak, data):
     if len(x_sigma) > 0:
         return min([ abs(x_sigma[i] - x_peak) for i in range(len(x_sigma)) ])
     else:
-        return 0
+        return (data.F_max - data.F_min)/2
+
 
 def find_sigma_2(x_peak, y_peak, data):
     """
@@ -134,18 +150,22 @@ def perform():
     sigma = {}
     a_from_t_sum = {} #sensitivity
     a_from_step = {} #sensitivity
-    N = 25
+    N = 45
     t_sum = 0
     epsilon = 10 ** (-3)
     prev_sigma = experimentData.F_max - experimentData.F_min
     flag = False
     prev_step = 0
+    prev_entropy_step = -1
     #
     fig, ax = plt.subplots()
     ax.minorticks_on()
 
     print(experimentData.probability_distribution) # initial
     print(experimentData.fields_number)
+    plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
+             [each for each in experimentData.probability_distribution])
+
     for step in range(N):
 
         bayesians_learning.renew_probalities(experimentData)
@@ -157,10 +177,11 @@ def perform():
 
 
         x_peak, y_peak = find_peak(experimentData)
-        left_peak_side, right_peak_side = localise_peak(experimentData)
+        num_of_peaks = find_num_of_peaks(experimentData, y_peak)
+        pseudo_entropy = pseudo_entropy_count(experimentData, y_peak)
         current_sigma = find_sigma(x_peak, y_peak, experimentData) / experimentData.gained_degree
 
-        a_from_t_sum[t_sum] = current_sigma * (t_sum)**0.5
+        a_from_t_sum[t_sum] = current_sigma * (t_sum) ** 0.5
         a_from_step[step] = current_sigma * (t_sum) ** 0.5
 
         if current_sigma != 0:
@@ -182,12 +203,31 @@ def perform():
             prev_sigma = current_sigma
 
         if (step) % 1 == 0:
-            plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], [each for each in experimentData.probability_distribution]) # distr each 50 steps
+            plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], [each for each in experimentData.probability_distribution]) # distr each _ steps
 
         if (step + 1) % 1 == 0:
-            print(bayesians_learning.integrate_distribution(experimentData), x_peak, y_peak, step, current_sigma, prev_sigma, t_sum, experimentData.const * experimentData.F * experimentData.t*experimentData.F_degree, flag) # checking ~ 1
+            print(bayesians_learning.integrate_distribution(experimentData), num_of_peaks, pseudo_entropy, x_peak, y_peak, step, current_sigma, prev_sigma, experimentData.t, experimentData.const * experimentData.F * experimentData.t*experimentData.F_degree, flag) # checking ~ 1
 
-        if flag and current_sigma*experimentData.gained_degree <= 7*experimentData.delta_F:
+        if pseudo_entropy == 1 or num_of_peaks == 1:
+            experimentData.num_of_repetitions = 1
+
+        if pseudo_entropy > 1 and step - prev_entropy_step > 2 and num_of_peaks == 1:
+            experimentData.num_of_repetitions = 10
+            experimentData.t /= experimentData.time_const ** (1)
+            prev_entropy_step = step
+
+
+        if num_of_peaks > 1:
+            experimentData.t /= experimentData.time_const ** (1)
+            experimentData.num_of_repetitions = 20
+
+        if pseudo_entropy > 2 or num_of_peaks > 2:
+            experimentData.t /= experimentData.time_const ** (1)
+
+        if pseudo_entropy > 3 or num_of_peaks > 3:
+            experimentData.t /= experimentData.time_const ** (1)
+
+        if flag and current_sigma*experimentData.gained_degree <= 8*experimentData.delta_F or num_of_peaks > 1:
             plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
                      [each for each in experimentData.probability_distribution])
             plt.show()
@@ -201,7 +241,7 @@ def perform():
                      [each/10 for each in experimentData.probability_distribution])
             print(experimentData.probability_distribution)
 
-        if y_peak >= 1.0 - epsilon or t_sum >= 100*10**(-3):
+        if y_peak >= 1.0 - epsilon or experimentData.t >= 10*10**(-6):
             break
 
     #plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], experimentData.probability_distribution) # final distr

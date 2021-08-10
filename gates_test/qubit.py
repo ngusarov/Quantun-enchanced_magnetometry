@@ -16,8 +16,7 @@ def randbin(data, F): # simple math
     return np.random.choice([0, 1], size=(1,1), p=[p_0, 1-p_0]).reshape(1)[0]
 
 #IBMQ.disable_account()
-'
-provider = IBMQ.enable_account(t)
+provider = IBMQ.enable_account()
 #backend = provider.get_backend("ibmq_armonk")
 backend = least_busy(provider.backends(filters=lambda x: not x.configuration().simulator))
 # Use Aer's qasm_simulator
