@@ -15,7 +15,7 @@ def gaussian(in_s, F_min, delta_F, in_cen, i):
 
 @dataclass
 class ExperimentData:
-    F = 80
+    F = 30
     F_min = 0  # min field Tesla
     F_max = 100 # max field Tesla
     F_degree = 10**(-9)
@@ -26,7 +26,7 @@ class ExperimentData:
     mu = 10 ** (5) * 927 * 10**(-26)  # magnetic moment of the qubit
     h = 6.62 * 10 ** (-34)  # plank's constant
     const = mu/h  # mu/h
-    t = math.pi/(const*F_degree*F_max/2)*2**(-3)
+    t = math.pi/(const*F_degree*F_max/2)*2**(-4)
     t_init = t # time of interaction in seconds
     num_of_repetitions = 1  # repetitions for one experiment
     in_s = (F_max - F_min) / 2
@@ -142,6 +142,35 @@ def expand(x_peak, y_peak, sigma, data):
     data.probability_distribution = list(map(lambda x: k*x, data.probability_distribution))
     '''
 
+
+def expand_2(x_peak, y_peak, sigma, data):
+
+    new_F_min = max((x_peak - (data.fields_number//4)*data.delta_F), data.F_min)
+    start_ind = int(round((new_F_min - data.F_min) / data.delta_F))
+    data.F_min = new_F_min
+    data.F_max = min((x_peak + (data.fields_number//4)*data.delta_F), data.F_max)
+    data.delta_F /= 2
+
+    data.fields_number = int(round( (data.F_max - data.F_min + data.delta_F) / data.delta_F ))
+    new_distr = [0] * data.fields_number
+
+    for i in range(start_ind, start_ind + int(round((data.F_max - data.F_min)/(data.delta_F*2)))+1):
+        new_distr[(i - start_ind)*2] = \
+            data.probability_distribution[i]
+
+    for i in range(start_ind, start_ind + int(round((data.F_max - data.F_min)/(data.delta_F*2)))):
+        for j in range(1, 2):
+            new_distr[(i - start_ind) * 2 + j] = j/2*(data.probability_distribution[i+1] - data.probability_distribution[i]) + \
+                data.probability_distribution[i]
+    data.probability_distribution = new_distr.copy()
+    '''
+    integral = bayesians_learning.integrate_distribution(data)
+    print(integral)
+    k = 1 / integral
+    data.probability_distribution = list(map(lambda x: k*x, data.probability_distribution))
+    '''
+
+
 # enlarging field segment ----------
 
 
@@ -211,15 +240,15 @@ def perform():
         if pseudo_entropy == 1 or num_of_peaks == 1:
             experimentData.num_of_repetitions = 1
 
-        if pseudo_entropy > 1 and step - prev_entropy_step > 2 and num_of_peaks == 1:
-            experimentData.num_of_repetitions = 10
-            experimentData.t /= experimentData.time_const ** (1)
+        if pseudo_entropy > 1 and step - prev_entropy_step > 1 and num_of_peaks == 1:
+            experimentData.num_of_repetitions = 1
+            experimentData.t /= experimentData.time_const ** (0)
             prev_entropy_step = step
 
 
         if num_of_peaks > 1:
-            experimentData.t /= experimentData.time_const ** (1)
-            experimentData.num_of_repetitions = 20
+            experimentData.t /= experimentData.time_const ** (0)
+            experimentData.num_of_repetitions = 1
 
         if pseudo_entropy > 2 or num_of_peaks > 2:
             experimentData.t /= experimentData.time_const ** (1)
@@ -227,7 +256,7 @@ def perform():
         if pseudo_entropy > 3 or num_of_peaks > 3:
             experimentData.t /= experimentData.time_const ** (1)
 
-        if flag and current_sigma*experimentData.gained_degree <= 8*experimentData.delta_F or num_of_peaks > 1:
+        if flag and current_sigma*experimentData.gained_degree <= 15*experimentData.delta_F or num_of_peaks > 1:
             plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
                      [each for each in experimentData.probability_distribution])
             plt.show()
@@ -236,9 +265,9 @@ def perform():
             fig, ax = plt.subplots()
             ax.minorticks_on()
 
-            expand(x_peak, y_peak, current_sigma, experimentData)
+            expand_2(x_peak, y_peak, current_sigma, experimentData)
             plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
-                     [each/10 for each in experimentData.probability_distribution])
+                     [each for each in experimentData.probability_distribution])
             print(experimentData.probability_distribution)
 
         if y_peak >= 1.0 - epsilon or experimentData.t >= 10*10**(-6):
