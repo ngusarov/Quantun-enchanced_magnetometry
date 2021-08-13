@@ -15,7 +15,7 @@ def gaussian(in_s, F_min, delta_F, in_cen, i):
 
 @dataclass
 class ExperimentData:
-    F = 70
+    F = 60
     F_min = 0  # min field Tesla
     F_max = 100 # max field Tesla
     F_degree = 10**(-9)
@@ -28,7 +28,7 @@ class ExperimentData:
     const = mu/h  # mu/h
     t = math.pi/(const*F_degree*F_max/2)*2**(-1)
     t_init = t # time of interaction in seconds
-    num_of_repetitions = 51  # repetitions for one experiment
+    num_of_repetitions = 1  # repetitions for one experiment
     in_s = (F_max - F_min) / 2
     in_cen = F_min  # (F_max + F_min)/2
     probability_distribution = [ gaussian(100, 0, 1, 100, i)
@@ -179,13 +179,16 @@ def perform():
     sigma = {}
     a_from_t_sum = {} #sensitivity
     a_from_step = {} #sensitivity
-    N = 10
+    N = 0
     t_sum = 0
     epsilon = 10 ** (-3)
     prev_sigma = experimentData.F_max - experimentData.F_min
     flag = False
     prev_step = 0
     prev_entropy_step = -1
+
+    d = []
+    t = 0
     #
     fig, ax = plt.subplots()
     ax.minorticks_on()
@@ -237,25 +240,35 @@ def perform():
         if (step + 1) % 1 == 0:
             print(bayesians_learning.integrate_distribution(experimentData), num_of_peaks, pseudo_entropy, x_peak, y_peak, step, current_sigma, prev_sigma, experimentData.t, experimentData.const * experimentData.F * experimentData.t*experimentData.F_degree, flag) # checking ~ 1
 
+        if (step == 2):
+            d = experimentData.probability_distribution.copy()
+            experimentData.t /= 2
+            t = experimentData.t
+            print('d', d)
+            print('t', t)
+
+
+
+        '''
         if pseudo_entropy == 1 or num_of_peaks == 1:
-            experimentData.num_of_repetitions = 51
+            experimentData.num_of_repetitions = 1
 
         if pseudo_entropy > 1 and step - prev_entropy_step > 1 and num_of_peaks == 1:
-            experimentData.num_of_repetitions = 101
+            experimentData.num_of_repetitions = 1
             experimentData.t /= experimentData.time_const ** (0)
             prev_entropy_step = step
 
 
         if num_of_peaks > 1:
             experimentData.t /= experimentData.time_const ** (0)
-            experimentData.num_of_repetitions = 101
+            experimentData.num_of_repetitions = 1
 
         if pseudo_entropy > 2 or num_of_peaks > 2:
             experimentData.t /= experimentData.time_const ** (1)
 
         if pseudo_entropy > 3 or num_of_peaks > 3:
             experimentData.t /= experimentData.time_const ** (1)
-
+        
         if flag and current_sigma*experimentData.gained_degree <= 15*experimentData.delta_F or num_of_peaks > 1:
             plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
                      [each for each in experimentData.probability_distribution])
@@ -270,13 +283,24 @@ def perform():
                      [each for each in experimentData.probability_distribution])
             print(experimentData.probability_distribution)
 
-        if y_peak >= 1.0 - epsilon or experimentData.t >= 100*10**(-6):
-            break
+        if y_peak >= 1.0 - epsilon or experimentData.t >= 10*10**(-6):
+            break'''
 
     #plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], experimentData.probability_distribution) # final distr
     plt.show()
     #fig.savefig('distr_' + '.png', dpi=500)
     plt.close()
+    experimentData.t = t*2
+    experimentData.t = experimentData.t_init
+
+    for i in range(3):
+        plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
+                 [bayesians_learning.P_qubit_state_on_F_i(1, experimentData.F_min + i * experimentData.delta_F, experimentData) for i in range(experimentData.fields_number)])
+        experimentData.t *= 2
+    plt.show()
+    plt.close()
+
+    '''
     print(list(sigma.keys())[-1], list(sigma.values())[-1])
 
     try:
@@ -293,7 +317,7 @@ def perform():
     x_peak, y_peak = find_peak(experimentData)
 
     plotter.plotting(sigma)
-
+    '''
     #return x_peak, plotter.plotting(sigma)[1][1], list(sigma.keys())[-1], list(sigma.values())[-1]
 
 '''def average_20(Field, F_max):

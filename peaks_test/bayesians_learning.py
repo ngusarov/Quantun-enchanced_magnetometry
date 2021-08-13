@@ -106,13 +106,6 @@ def normalise(data):
     s = integrate_distribution(local_data)
     for i in range(local_data.fields_number):
         local_data.probability_distribution[i] = local_data.probability_distribution[i] / s
-
-    peak = max(local_data.probability_distribution)
-    if peak > 0.9:
-        k = peak/0.9
-        for i in range(local_data.fields_number):
-            local_data.probability_distribution[i] = local_data.probability_distribution[i] / k
-
     return local_data.probability_distribution
 
 #arr = []
