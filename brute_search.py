@@ -15,13 +15,13 @@ def gaussian(sigma, center, x):
 
 @dataclass
 class ExperimentData:
-    F = 70
+    F = 40
     F_min = 0  # min field Tesla
-    F_max = 100 # max field Tesla
-    F_degree = 10**(-9)
+    F_max = 50 # max field Tesla
+    F_degree = 10**(-15)
 
     time_const = 2
-    mu = 10 ** (5) * 927 * 10**(-26)  # magnetic moment of the qubit
+    mu = 10 ** (11) * 927 * 10**(-26)  # magnetic moment of the qubit
     h = 6.62 * 10 ** (-34)  # plank's constant
     const = mu/h  # mu/h
     t = math.pi/(const*F_degree*F_max/2)*2**(-1)
@@ -41,7 +41,7 @@ def perform():
     sigma = {}
     a_from_t_sum = {} #sensitivity
     a_from_step = {} #sensitivity
-    N = 100
+    N = 28
     t_sum = 0
     epsilon = 10 ** (-5)
 
@@ -60,41 +60,43 @@ def perform():
         current_sigma = (experimentData.F_max - experimentData.F_min)/2
 
         sigma[t_sum] = current_sigma
-        a_from_t_sum[t_sum] = current_sigma * (t_sum) ** 0.5
-        a_from_step[step] = current_sigma * (t_sum) ** 0.5
+
+        center = (experimentData.F_max + experimentData.F_min) / 2
+        a_from_t_sum[experimentData.t] = abs(center - experimentData.F) * (t_sum) ** 0.5
+        #a_from_step[step] = current_sigma * (t_sum) ** 0.5
 
         experimentData.t *= experimentData.time_const
 
-        print(step, experimentData.F_min, experimentData.F_max, experimentData.t)
+        print(step, experimentData.F_min, experimentData.F_max, experimentData.t, t_sum)
         x = np.arange(experimentData.F_min, experimentData.F_max, 0.01)
-        center = (experimentData.F_max+experimentData.F_min)/2
+
         plt.plot(x, 1 / (current_sigma * np.sqrt(2 * np.pi)) *
                  np.exp(- (x - center) ** 2 / (2 * current_sigma ** 2)),
                  linewidth=2, color='r')
-        plt.show()
-        plt.close()
+
 
 
 
         if current_sigma <= epsilon or experimentData.t >= 200*10**(-6):
             break
 
+    plt.show()
+    plt.close()
 
     print(list(sigma.keys())[-1], list(sigma.values())[-1])
 
+    #try:
+    #    plotter.plotting_sensitivity(a_from_step, r'$N$')
+    #except Exception:
+    #    pass
     try:
-        plotter.plotting_sensitivity(a_from_step, r'$N$')
+        plotter.plotting_sensitivity(a_from_t_sum, r'$t_{coherense\_max}, \, \mu s$')
     except Exception:
         pass
-    try:
-        plotter.plotting_sensitivity(a_from_t_sum, r'$t_{sum}$')
-    except Exception:
-        pass
-
-    print("final sensitivity: ", a_from_t_sum[t_sum]*10**(-9))
-
 
     plotter.plotting(sigma)
+
+    return a_from_t_sum
 
 
 '''def average_20(Field, F_max):

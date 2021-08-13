@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import bayesians_learning
 import plotter
 #import ramsey_qubit
+import brute_search
 
 # constants start ---------------------
 
@@ -15,15 +16,16 @@ def gaussian(in_s, F_min, delta_F, in_cen, i):
 
 @dataclass
 class ExperimentData:
-    F = 70
+    F = 40
     F_min = 0  # min field Tesla
-    F_max = 100 # max field Tesla
-    F_degree = 10**(-9)
+    F_max = 50  # max field Tesla
+    F_degree = 10 ** (-15)
+
     gained_degree = 1
     delta_F = 1  # accuracy of F defining
     fields_number = round( (F_max - F_min + delta_F) / delta_F ) # amount of discrete F meanings
     time_const = 2
-    mu = 10 ** (5) * 927 * 10**(-26)  # magnetic moment of the qubit
+    mu = 10 ** (11) * 927 * 10**(-26)  # magnetic moment of the qubit
     h = 6.62 * 10 ** (-34)  # plank's constant
     const = mu/h  # mu/h
     t = math.pi/(const*F_degree*F_max/2)*2**(-1)
@@ -31,7 +33,7 @@ class ExperimentData:
     num_of_repetitions = 51  # repetitions for one experiment
     in_s = (F_max - F_min) / 2
     in_cen = F_min  # (F_max + F_min)/2
-    probability_distribution = [ gaussian(100, 0, 1, 100, i)
+    probability_distribution = [ gaussian(50, 0, 1, 25, i)
          for i in
         range(fields_number)]
 
@@ -179,7 +181,7 @@ def perform():
     sigma = {}
     a_from_t_sum = {} #sensitivity
     a_from_step = {} #sensitivity
-    N = 10
+    N = 45
     t_sum = 0
     epsilon = 10 ** (-3)
     prev_sigma = experimentData.F_max - experimentData.F_min
@@ -210,8 +212,9 @@ def perform():
         pseudo_entropy = pseudo_entropy_count(experimentData, y_peak)
         current_sigma = find_sigma(x_peak, y_peak, experimentData) / experimentData.gained_degree
 
-        a_from_t_sum[t_sum] = current_sigma * (t_sum) ** 0.5
-        a_from_step[step] = current_sigma * (t_sum) ** 0.5
+        #a_from_t_sum[t_sum] = current_sigma * (t_sum) ** 0.5
+        #a_from_step[step] = current_sigma * (t_sum) ** 0.5
+        a_from_t_sum[experimentData.t] = abs(experimentData.F - x_peak) * (t_sum) ** 0.5
 
         if current_sigma != 0:
             sigma[t_sum] = current_sigma
@@ -256,7 +259,7 @@ def perform():
         if pseudo_entropy > 3 or num_of_peaks > 3:
             experimentData.t /= experimentData.time_const ** (1)
 
-        if flag and current_sigma*experimentData.gained_degree <= 15*experimentData.delta_F or num_of_peaks > 1:
+        if flag and current_sigma*experimentData.gained_degree <= 10*experimentData.delta_F or num_of_peaks > 1:
             plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
                      [each for each in experimentData.probability_distribution])
             plt.show()
@@ -270,7 +273,7 @@ def perform():
                      [each for each in experimentData.probability_distribution])
             print(experimentData.probability_distribution)
 
-        if y_peak >= 1.0 - epsilon or experimentData.t >= 100*10**(-6):
+        if experimentData.t >= 200*10**(-6):
             break
 
     #plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], experimentData.probability_distribution) # final distr
@@ -279,22 +282,26 @@ def perform():
     plt.close()
     print(list(sigma.keys())[-1], list(sigma.values())[-1])
 
-    try:
+    '''try:
         plotter.plotting_sensitivity(a_from_step, r'$N$')
     except Exception:
         pass
     try:
         plotter.plotting_sensitivity(a_from_t_sum, r'$t_{sum}$')
     except Exception:
+        pass'''
+    try:
+        plotter.plotting_sensitivity(a_from_t_sum, r'$t_{coherense\_max}, \, \mu s$')
+    except Exception:
         pass
 
-    print("final sensitivity: ", a_from_t_sum[t_sum]*10**(-9))
+    #print("final sensitivity: ", a_from_t_sum[t_sum]*10**(-9))
 
     x_peak, y_peak = find_peak(experimentData)
 
     plotter.plotting(sigma)
 
-    #return x_peak, plotter.plotting(sigma)[1][1], list(sigma.keys())[-1], list(sigma.values())[-1]
+    return a_from_t_sum
 
 '''def average_20(Field, F_max):
     F = []
@@ -319,7 +326,7 @@ def perform():
 '''
 
 if __name__ == "__main__":
-    perform()
-    #for i in range(200):
-    #    average_20(50, experimentData.F_max)
-    #    experimentData.F_max += 30
+    adaptive = perform()
+    brute = brute_search.perform()
+
+    plotter.plotting_compilation(adaptive, brute, r'$t_{coherense\_max}, \, \mu s$')
