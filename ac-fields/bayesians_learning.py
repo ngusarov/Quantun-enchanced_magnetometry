@@ -28,9 +28,9 @@ def P_qubit_state_on_F_i(qubit_state, F_i, data):
     :param F_i: field in Tesla
     :return: based on (1), (2) in ReadMe.md we return conditional probability
     '''
-
-    if qubit_state == 1: return ( math.cos(data.const*F_i*data.F_degree*data.t/2) )**2
-    else: return ( math.sin(data.const*F_i*data.F_degree*data.t/2) )**2
+    phi = data.const*F_i*data.F_degree*data.t*qubit.W_CP(data.f_ac, data.phase, data.n_of_pulses, data.t)
+    if qubit_state == 1: return ( math.cos(phi/2) )**2
+    else: return ( math.sin(phi/2) )**2
 
     '''
     p_1 = ( math.cos(data.const*F_i*data.F_degree*data.t/2) )**2
@@ -78,39 +78,21 @@ def reaccount_P_F_i(i, new_qubit_state, F_i, data):
     :param old_distr: current distribution
     :return: reaccounted probability of particular field based on Bayesian's Theorem
     '''
-    '''
-    try:
-        return (new_qubit_state['0']*(P_F_i(i) * P_qubit_state_on_F_i(1, F_i, data) / \
-               rect_integral_of_multiplication_probabilities(P_F_i,
-                                     P_qubit_state_on_F_i,
-                                     1, data)) + new_qubit_state['1']*(P_F_i(i) * P_qubit_state_on_F_i(0, F_i, data) / \
-               rect_integral_of_multiplication_probabilities(P_F_i,
-                                     P_qubit_state_on_F_i,
-                                     0, data)))/data.num_of_repetitions
-    except Exception:
-        pass
-
-    return (new_qubit_state[list(new_qubit_state.keys())[0]] * (P_F_i(i) * P_qubit_state_on_F_i(abs(int(list(new_qubit_state.keys())[0])-1), F_i, data) / \
-                            rect_integral_of_multiplication_probabilities(P_F_i,
-                                                                          P_qubit_state_on_F_i,
-                                                                          abs(int(list(new_qubit_state.keys())[0])-1), data))) / data.num_of_repetitions
-    '''
-
-    return P_F_i(i) * P_qubit_state_on_F_i(new_qubit_state, F_i, data) / \
+    return sum( [P_F_i(i) * P_qubit_state_on_F_i(new_qubit_state[j], F_i, data) / \
            rect_integral_of_multiplication_probabilities(P_F_i,
                                  P_qubit_state_on_F_i,
-                                 new_qubit_state, data)
+                                 new_qubit_state[j], data) for j in range(data.num_of_repetitions)] ) / data.num_of_repetitions
 
 
-def renew_probalities(new_qubit_state, data):
+def renew_probalities(data):
     '''
     :param new_qubit_state: 0 or 1
     :param distr: current distribution of all fields
     :return: new distribution of all fields
     '''
-    #new_qubit_state = qubit.randbin2(data, data.F)
+
     #new_qubit_state = int(round(sum([qubit.randbin(data, data.F) for i in range(data.num_of_repetitions)])/data.num_of_repetitions))
-    #new_qubit_state = [qubit.randbin(data, data.F) for i in range(data.num_of_repetitions)]
+    new_qubit_state = [qubit.randbin(data, data.F) for i in range(data.num_of_repetitions)]
     distr_storage.old_distr = data.probability_distribution.copy() # saving current meanings to reaccount all P(F_i) at once
 
     for i in range(data.fields_number-1, -1, -1):

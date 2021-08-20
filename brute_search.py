@@ -17,11 +17,11 @@ def gaussian(sigma, center, x):
 class ExperimentData:
     F = 40
     F_min = 0  # min field Tesla
-    F_max = 50 # max field Tesla
-    F_degree = 10**(-15)
+    F_max = 100 # max field Tesla
+    F_degree = 10**(-11)
 
     time_const = 2
-    mu = 10 ** (11) * 927 * 10**(-26)  # magnetic moment of the qubit
+    mu = 10 ** (5) * 927 * 10**(-26)  # magnetic moment of the qubit
     h = 6.62 * 10 ** (-34)  # plank's constant
     const = mu/h  # mu/h
     t = math.pi/(const*F_degree*F_max/2)*2**(-1)
@@ -48,9 +48,12 @@ def perform():
 
 
     for step in range(N):
-        outcome = int(round( sum([qubit.randbin(experimentData, experimentData.F) for i in range(experimentData.num_of_repetitions)])/experimentData.num_of_repetitions ))
+        outcome = int(round( sum([qubit.randbin(experimentData, experimentData.F)
+                                  for i in range(experimentData.num_of_repetitions)])/
+                                    experimentData.num_of_repetitions ))
 
-        if bayesians_learning.P_qubit_state_on_F_i(outcome, experimentData.F_min, experimentData) > bayesians_learning.P_qubit_state_on_F_i(outcome, experimentData.F_max, experimentData):
+        if bayesians_learning.P_qubit_state_on_F_i(outcome, experimentData.F_min, experimentData)\
+                > bayesians_learning.P_qubit_state_on_F_i(outcome, experimentData.F_max, experimentData):
             experimentData.F_max = (experimentData.F_max + experimentData.F_min)/2
         else:
             experimentData.F_min = (experimentData.F_max + experimentData.F_min) / 2
@@ -67,12 +70,12 @@ def perform():
 
         experimentData.t *= experimentData.time_const
 
-        print(step, experimentData.F_min, experimentData.F_max, experimentData.t, t_sum)
-        x = np.arange(experimentData.F_min, experimentData.F_max, 0.01)
+        print(step, center, current_sigma, experimentData.t*10**6, t_sum)
+        #x = np.arange(experimentData.F_min, experimentData.F_max, 0.01)
 
-        plt.plot(x, 1 / (current_sigma * np.sqrt(2 * np.pi)) *
-                 np.exp(- (x - center) ** 2 / (2 * current_sigma ** 2)),
-                 linewidth=2, color='r')
+        #plt.plot(x, 1 / (current_sigma * np.sqrt(2 * np.pi)) *
+        #         np.exp(- (x - center) ** 2 / (2 * current_sigma ** 2)),
+        #         linewidth=2, color='r')
 
 
 
@@ -80,8 +83,8 @@ def perform():
         if current_sigma <= epsilon or experimentData.t >= 200*10**(-6):
             break
 
-    plt.show()
-    plt.close()
+    #plt.show()
+    #plt.close()
 
     print(list(sigma.keys())[-1], list(sigma.values())[-1])
 

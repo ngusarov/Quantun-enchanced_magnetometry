@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
 
@@ -10,22 +11,34 @@ import plotter
 #F = 20  # field strength to be measured in Tesla
 
 
+def gaussian(in_s, F_min, delta_F, in_cen, i):
+    return 1 / (in_s * (2 * math.pi) ** 0.5) * math.exp(-(F_min + i * delta_F - in_cen) ** 2 / (2 * in_s ** 2))
+
+
 @dataclass
 class ExperimentData:
-    F = 50
-    F_min = 1  # min field Tesla
-    F_max = 100 # max field Tesla
-    F_degree = 10**(-9)
+    F = 20
+    F_min = 0  # min field Tesla
+    F_max = 50  # max field Tesla
+    F_degree = 10 ** (-9)
+
+    amp_err = 0.0
+    phase_err = 0.0
+
+    gained_degree = 1
     delta_F = 1  # accuracy of F defining
     fields_number = round( (F_max - F_min + delta_F) / delta_F ) # amount of discrete F meanings
     time_const = 2
     mu = 10 ** (5) * 927 * 10**(-26)  # magnetic moment of the qubit
     h = 6.62 * 10 ** (-34)  # plank's constant
     const = mu/h  # mu/h
-    t = 3.14/4/(0.5*const*F_degree*(F_max - F_min)/2) #* 2**(1)  # time of interaction in seconds
+    t = math.pi/(const*F_degree*F_max/2)*2**(-1)
+    t_init = t # time of interaction in seconds
+    num_of_repetitions = 51  # repetitions for one experiment
 
-    probability_distribution = [1 / fields_number] * fields_number
-
+    probability_distribution = [ gaussian(50, 0, 1, 25, i)
+         for i in
+        range(fields_number)]
 
 # constants end -----------------------
 

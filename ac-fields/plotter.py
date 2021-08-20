@@ -113,25 +113,24 @@ def plotting_sensitivity(sensitivity, dependence):
         'v',
         'black'
     ]
-
+    step_delay = 1
     title = 'Sensitivity from ' + dependence
     x_label = dependence#r'$t_{sum} \, or \, N$'
-    y_label = r'$sensitivity, pT/\sqrt{Hz}$'
+    y_label = r'$sensitivity, fT/\sqrt{Hz}$'
     fig, ax = preparing_figure(title, x_label, y_label)
     p = 0
     approx = False
 
-    step_delay = len(list(sensitivity.keys()))-4
     #math.log(each)/math.log(10)
     x = [each*10**6 for each in list(sensitivity.keys())[step_delay:]]
-    y = [each*10**3 for each in list(sensitivity.values())[step_delay:]]
+    y = [each*10 for each in list(sensitivity.values())[step_delay:]]
     x_p = np.linspace(min(x[:]), max(x[:]))
     if approx:
         p = fitting(x[:], y[:], 1)
         ax.plot(x_p, p(x_p), c=types_of_colors[0], ls='-', label=r'$sensitivity$')
         ax.plot(x, y, types_of_dots[2], c=types_of_colors[0])
     else:
-        ax.plot(x, y, types_of_dots[2], c=types_of_colors[0], label=r'$\delta F \cdot \sqrt{t_{sum}}$'+'\n'+'F = 0...50 $nT$')
+        ax.plot(x, y, types_of_dots[2], c=types_of_colors[0], label=r'$\sigma \cdot \sqrt{t_{sum}}$'+'\n'+'F = 0...50 $fT$')
 
     p_min = fitting([math.log(each) for each in list(sensitivity.keys())[step_delay:]],
                     [math.log(1 / each) for each in list(sensitivity.keys())[step_delay:]], 1)

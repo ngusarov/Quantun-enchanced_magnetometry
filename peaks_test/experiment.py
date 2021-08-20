@@ -17,8 +17,8 @@ def gaussian(in_s, F_min, delta_F, in_cen, i):
 class ExperimentData:
     F = 60
     F_min = 0  # min field Tesla
-    F_max = 100 # max field Tesla
-    F_degree = 10**(-9)
+    F_max = 10  # max field Tesla
+    F_degree = 10**(-12)
     gained_degree = 1
     delta_F = 1  # accuracy of F defining
     fields_number = round( (F_max - F_min + delta_F) / delta_F ) # amount of discrete F meanings
@@ -195,8 +195,8 @@ def perform():
 
     print(experimentData.probability_distribution) # initial
     print(experimentData.fields_number)
-    plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
-             [each for each in experimentData.probability_distribution])
+    #plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
+    #         [each for each in experimentData.probability_distribution])
 
     for step in range(N):
 
@@ -287,13 +287,14 @@ def perform():
             break'''
 
     #plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], experimentData.probability_distribution) # final distr
-    plt.show()
+    #plt.show()
     #fig.savefig('distr_' + '.png', dpi=500)
-    plt.close()
-    experimentData.t = t*2
-    experimentData.t = experimentData.t_init
+    #plt.close()
+    #experimentData.t = t*2
+    experimentData.t = experimentData.t_init * 2**(5)
+    print(experimentData.t)
 
-    for i in range(3):
+    for i in range(1):
         plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
                  [bayesians_learning.P_qubit_state_on_F_i(1, experimentData.F_min + i * experimentData.delta_F, experimentData) for i in range(experimentData.fields_number)])
         experimentData.t *= 2

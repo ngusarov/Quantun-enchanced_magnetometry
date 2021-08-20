@@ -1,7 +1,6 @@
 import math
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
-import numpy as np
 
 import bayesians_learning
 import plotter
@@ -9,7 +8,6 @@ import plotter
 import brute_search
 
 # constants start ---------------------
-import qubit
 
 
 def gaussian(in_s, F_min, delta_F, in_cen, i):
@@ -18,13 +16,16 @@ def gaussian(in_s, F_min, delta_F, in_cen, i):
 
 @dataclass
 class ExperimentData:
-    F = 20
+    F = 40 # F_ac = F * cos(2*pi*f_ac*t + phase)
     F_min = 0  # min field Tesla
     F_max = 50  # max field Tesla
     F_degree = 10 ** (-9)
 
-    amp_err = 0.0
-    phase_err = 0.0
+    f_ac = 10**(8)  # Hz
+
+    phase = 0  # radians
+
+    n_of_pulses = 1
 
     gained_degree = 1
     delta_F = 1  # accuracy of F defining
@@ -33,12 +34,15 @@ class ExperimentData:
     mu = 10 ** (5) * 927 * 10**(-26)  # magnetic moment of the qubit
     h = 6.62 * 10 ** (-34)  # plank's constant
     const = mu/h  # mu/h
-    t = math.pi/(const*F_degree*F_max/2)*2**(-1)
+    tau = 1/(2*f_ac)
+    t = n_of_pulses*tau
     t_init = t # time of interaction in seconds
     num_of_repetitions = 51  # repetitions for one experiment
-
-    probability_distribution = [ gaussian(25, 0, 1, 25, i)
-         for i in range(fields_number)]
+    in_s = (F_max - F_min) / 2
+    in_cen = F_min  # (F_max + F_min)/2
+    probability_distribution = [ gaussian(100, 0, 1, 50, i)
+         for i in
+        range(fields_number)]
 
     #probability_distribution = [1 / fields_number] * fields_number
 
@@ -179,39 +183,8 @@ def expand_2(x_peak, y_peak, sigma, data):
 # enlarging field segment ----------
 
 
-def perform(p_err, a_err, F):
-
-
+def perform():
     experimentData = ExperimentData()
-
-    experimentData.F = F
-    experimentData.F_min = 0  # min field Tesla
-    experimentData.F_max = 50  # max field Tesla
-    experimentData.F_degree = 10 ** (-9)
-
-    experimentData.amp_err = 0.0
-    experimentData.phase_err = 0.0
-
-    experimentData.gained_degree = 1
-    experimentData.delta_F = 1  # accuracy of F defining
-    experimentData.fields_number = round((experimentData.F_max - experimentData.F_min + experimentData.delta_F) / experimentData.delta_F)  # amount of discrete F meanings
-    time_const = 2
-    experimentData.mu = 10 ** (5) * 927 * 10 ** (-26)  # magnetic moment of the qubit
-    experimentData.h = 6.62 * 10 ** (-34)  # plank's constant
-    experimentData.const = experimentData.mu / experimentData.h  # mu/h
-    experimentData.t = math.pi / (experimentData.const * experimentData.F_degree * experimentData.F_max / 2) * 2 ** (-1)
-    experimentData.t_init = experimentData.t  # time of interaction in seconds
-    experimentData.num_of_repetitions = 101  # repetitions for one experiment
-
-    experimentData.probability_distribution = [gaussian(50, 0, 1, 25, i)
-                                for i in
-                                range(experimentData.fields_number)]
-
-
-
-    experimentData.phase_err = p_err
-    experimentData.amp_err = a_err
-
     sigma = {}
     a_from_t_sum = {} #sensitivity
     a_from_step = {} #sensitivity
@@ -231,11 +204,9 @@ def perform(p_err, a_err, F):
     plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
              [each for each in experimentData.probability_distribution])
 
-    answers = qubit.randbin2(experimentData, experimentData.F)
-
     for step in range(N):
 
-        bayesians_learning.renew_probalities(answers[experimentData.t], experimentData)
+        bayesians_learning.renew_probalities(experimentData)
         #bayesians_learning.renew_probalities(qubit.randbin3(experimentData, F), experimentData)
         #bayesians_learning.renew_probalities(qubit.randbin2(experimentData, F), experimentData)
         #bayesians_learning.renew_probalities(ramsey_qubit.output(experimentData.t), experimentData)
@@ -250,8 +221,7 @@ def perform(p_err, a_err, F):
 
         #a_from_t_sum[t_sum] = current_sigma * (t_sum) ** 0.5
         #a_from_step[step] = current_sigma * (t_sum) ** 0.5
-        a_from_t_sum[experimentData.t] = max(abs(experimentData.F - x_peak), current_sigma) * (t_sum) ** 0.5
-        #a_from_t_sum[experimentData.t] = max(abs(experimentData.F - x_peak), current_sigma)
+        a_from_t_sum[experimentData.t] = abs(experimentData.F - x_peak) * (t_sum) ** 0.5
 
         if current_sigma != 0:
             sigma[t_sum] = current_sigma
@@ -278,7 +248,7 @@ def perform(p_err, a_err, F):
             print(bayesians_learning.integrate_distribution(experimentData), num_of_peaks, pseudo_entropy, x_peak, y_peak, step, current_sigma, prev_sigma, experimentData.t, experimentData.const * experimentData.F * experimentData.t*experimentData.F_degree, flag) # checking ~ 1
 
         if pseudo_entropy == 1 or num_of_peaks == 1:
-            experimentData.num_of_repetitions = 101
+            experimentData.num_of_repetitions = 51
 
         if pseudo_entropy > 1 and step - prev_entropy_step > 1 and num_of_peaks == 1:
             experimentData.num_of_repetitions = 101
@@ -296,7 +266,7 @@ def perform(p_err, a_err, F):
         if pseudo_entropy > 3 or num_of_peaks > 3:
             experimentData.t /= experimentData.time_const ** (1)
 
-        if flag and current_sigma*experimentData.gained_degree <= 5*experimentData.delta_F or num_of_peaks > 1:
+        if flag and current_sigma*experimentData.gained_degree <= 10*experimentData.delta_F or num_of_peaks > 1:
             plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
                      [each for each in experimentData.probability_distribution])
             plt.show()
@@ -313,12 +283,12 @@ def perform(p_err, a_err, F):
         if experimentData.t >= 200*10**(-6):
             break
 
-    plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], experimentData.probability_distribution) # final distr
+    #plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], experimentData.probability_distribution) # final distr
     plt.show()
     #fig.savefig('distr_' + '.png', dpi=500)
     plt.close()
-    print("t_sum: ", list(sigma.keys())[-1], ', sigma:', list(sigma.values())[-1])
-    print("t_coh_max: ", list(a_from_t_sum.keys())[-1] * 10**6, ", sensitivity: ", list(a_from_t_sum.values())[-1]*experimentData.F_degree)
+    print(list(sigma.keys())[-1], list(sigma.values())[-1])
+
     '''try:
         plotter.plotting_sensitivity(a_from_step, r'$N$')
     except Exception:
@@ -327,16 +297,16 @@ def perform(p_err, a_err, F):
         plotter.plotting_sensitivity(a_from_t_sum, r'$t_{sum}$')
     except Exception:
         pass'''
-    '''try:
-        plotter.plotting_sensitivity(a_from_t_sum, r'$t_{coherense\_max}, \, \mu s$')
-    except Exception:
-        pass'''
+    #try:
+    #    plotter.plotting_sensitivity(a_from_t_sum, r'$t_{coherense\_max}, \, \mu s$')
+    #except Exception:
+    #    pass
 
     #print("final sensitivity: ", a_from_t_sum[t_sum]*10**(-9))
 
     x_peak, y_peak = find_peak(experimentData)
 
-    #plotter.plotting(sigma)
+    plotter.plotting(sigma)
 
     return a_from_t_sum
 
@@ -363,58 +333,7 @@ def perform(p_err, a_err, F):
 '''
 
 if __name__ == "__main__":
-    '''
-    types_of_dots = [
-        '.',
-        'x',
-        'o',
-        'v',
-        '>'
-    ]
-    types_of_colors = [
-        'r',
-        'b',
-        'g',
-        'gray',
-        'black',
-        'purple'
-    ]
-
-    fig, ax = plt.subplots()
-    ax.minorticks_on()
-    ax.grid(which='major', axis='both')
-    ax.grid(which='minor', axis='both', linestyle=':')
-    '''
-    for i in range(1):
-        err = 0.05*i
-        adaptive = perform(0, err, 24)
-        for k in range(0):
-            for j in range(1):
-                adaptive_2 = perform(0, err, 5+j*10)
-                for each in(list(adaptive.keys())):
-                    adaptive[each] += adaptive_2[each]
-
-        for each in (list(adaptive.keys())):
-            adaptive[each] /= 0*1+1
-
-
-        plotter.plotting_sensitivity(adaptive, r'$t_{coherense\_max}, \, \mu s$')
-
-        '''
-        step_delay = len(list(adaptive.keys())) - 4
-        x = [each * 10 ** 6 for each in list(adaptive.keys())[step_delay:]]
-        y = [each for each in list(adaptive.values())[step_delay:]]
-        x_p = np.linspace(min(x[:]), max(x[:]))
-        ax.plot(x, y, types_of_dots[int(i%5)],
-                c=types_of_colors[int(i%6)],
-                label='amplitude_err=' + str(round(err, 3)))
-        
-
-    plt.legend(loc='best', prop={'size': 10})
-
-    plt.show()
-    plt.close()
-    '''
+    adaptive = perform()
     #brute = brute_search.perform()
 
     #plotter.plotting_compilation(adaptive, brute, r'$t_{coherense\_max}, \, \mu s$')
