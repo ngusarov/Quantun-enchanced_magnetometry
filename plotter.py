@@ -62,8 +62,8 @@ def plotting(sigma):
         'v',
         'black'
     ]
-
-    title = 'Half-width of the distr. decrease'
+    title = ''
+    #title = ''
     x_label = r'$\log(t_{sum})$'
     y_label = r'$\log(\sigma)$'
     fig, ax = preparing_figure(title, x_label, y_label)
@@ -73,7 +73,7 @@ def plotting(sigma):
     y = [math.log(each) for each in list(sigma.values())]
     x_p = np.linspace(min(x), max(x))
     if approx:
-        p = fitting(x, y, 1)
+        p = fitting(x[4:], y[4:], 1)
 
         ax.plot(x_p, p(x_p), c=types_of_colors[0], ls='-', label=r'$\sigma(t_{sum})$')
         ax.plot(x, y, types_of_dots[2], c=types_of_colors[0])
@@ -86,7 +86,7 @@ def plotting(sigma):
     p_max = fitting([math.log(each) for each in list(sigma.keys())  ], [math.log((1/each) ** 0.5) for each in list(sigma.keys())], 1)
     plt.plot(x_p, p_max(x_p) + p(x_p[0]) - p_max(x_p[0]), label=r'$\frac{1}{ \sqrt{ t_{sum} } }$')
 
-    plt.legend(loc='best')
+    plt.legend(loc='best', prop={'size': 15})
 
     plt.show()
 
@@ -131,7 +131,7 @@ def plotting_sensitivity(sensitivity, dependence):
         ax.plot(x_p, p(x_p), c=types_of_colors[0], ls='-', label=r'$sensitivity$')
         ax.plot(x, y, types_of_dots[2], c=types_of_colors[0])
     else:
-        ax.plot(x, y, types_of_dots[2], c=types_of_colors[0], label=r'$\delta F \cdot \sqrt{t_{sum}}$'+'\n'+'F = 0...50 $nT$')
+        ax.plot(x, y, types_of_dots[2], c=types_of_colors[0], label=r'$\Delta F \cdot \sqrt{t_{sum}}$'+'\n'+'F = 0...50 $nT$')
 
     p_min = fitting([math.log(each) for each in list(sensitivity.keys())[step_delay:]],
                     [math.log(1 / each) for each in list(sensitivity.keys())[step_delay:]], 1)

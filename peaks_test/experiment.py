@@ -2,7 +2,7 @@ import math
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
 
-import bayesians_learning
+import bl_replace as bayesians_learning
 import plotter
 #import ramsey_qubit
 
@@ -15,10 +15,14 @@ def gaussian(in_s, F_min, delta_F, in_cen, i):
 
 @dataclass
 class ExperimentData:
-    F = 60
+    F = 15
     F_min = 0  # min field Tesla
-    F_max = 10  # max field Tesla
-    F_degree = 10**(-12)
+    F_max = 50  # max field Tesla
+
+    amp_err = 0.9
+    phase_err = 0.0
+    T_2 = 100
+    F_degree = 10**(-9)
     gained_degree = 1
     delta_F = 1  # accuracy of F defining
     fields_number = round( (F_max - F_min + delta_F) / delta_F ) # amount of discrete F meanings
@@ -291,13 +295,32 @@ def perform():
     #fig.savefig('distr_' + '.png', dpi=500)
     #plt.close()
     #experimentData.t = t*2
-    experimentData.t = experimentData.t_init * 2**(5)
+    experimentData.t = experimentData.t_init * 2**(0)
     print(experimentData.t)
 
-    for i in range(1):
+    fig, ax = plt.subplots()
+    font = {'fontname': 'Times New Roman'}
+    ax.set_title(r'')
+
+    ax.minorticks_on()
+    ax.grid(which='major', axis='both')
+    ax.grid(which='minor', axis='both', linestyle=':')
+
+    # Подписи:
+    ax.set_xlabel("Field segment, $nT$", **font)
+    ax.set_ylabel(r'$P_{|state>}(F)$', **font)
+
+    for i in range(3):
         plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
-                 [bayesians_learning.P_qubit_state_on_F_i(1, experimentData.F_min + i * experimentData.delta_F, experimentData) for i in range(experimentData.fields_number)])
-        experimentData.t *= 2
+                 [bayesians_learning.P_qubit_state_on_F_i(1, experimentData.F_min + i * experimentData.delta_F, experimentData) for i in range(experimentData.fields_number)], label=r'$P_{|1>}(F)$')
+
+        plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
+                 [bayesians_learning.P_qubit_state_on_F_i(0, experimentData.F_min + i * experimentData.delta_F,
+                                                          experimentData) for i in range(experimentData.fields_number)], label=r'$P_{|0>}(F)$')
+        experimentData.t *= 8
+
+    plt.legend(loc='best')
+
     plt.show()
     plt.close()
 

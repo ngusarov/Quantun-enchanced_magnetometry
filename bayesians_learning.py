@@ -22,21 +22,41 @@ def P_F_i(i):
     return distr_storage.old_distr[i]
 
 
+def delta_P_qubit_state_on_F_i(qubit_state, F_i, data):
+    phi = data.const * F_i * data.t * data.F_degree
+    alpha = phi - math.pi/2
+    err = data.phase_err + data.amp_err
+    if qubit_state == 1:
+        return -(0.5*np.cos(phi) + 0.5*np.sqrt(1-err)*np.sin(0 + alpha))
+    else:
+        return +(0.5*np.cos(phi) + 0.5*np.sqrt(1-err)*np.sin(0 + alpha))
+
+
 def P_qubit_state_on_F_i(qubit_state, F_i, data):
     '''
     :param qubit_state: 1 or 0 after measuring
     :param F_i: field in Tesla
     :return: based on (1), (2) in ReadMe.md we return conditional probability
     '''
+    k = 0
+    t = data.t * 10 ** 6
+    #'''
+    if data.OPTIMIZE:
+        if qubit_state == 1:
+            return ((math.cos(data.const * F_i * data.F_degree * data.t / 2)) ** 2 - 0.5) * np.exp(
+                -t / data.T_2) + 0.5 #+ k * delta_P_qubit_state_on_F_i(qubit_state, F_i, data)
+        else:
+            return ((math.sin(data.const * F_i * data.F_degree * data.t / 2)) ** 2 - 0.5) * np.exp(
+                -t / data.T_2) + 0.5 #+ k * delta_P_qubit_state_on_F_i(qubit_state, F_i, data)
+    #'''
 
-    if qubit_state == 1: return ( math.cos(data.const*F_i*data.F_degree*data.t/2) )**2
-    else: return ( math.sin(data.const*F_i*data.F_degree*data.t/2) )**2
-
-    '''
-    p_1 = ( math.cos(data.const*F_i*data.F_degree*data.t/2) )**2
-    p_0 = ( math.sin(data.const*F_i*data.F_degree*data.t/2) )**2
-    return (sum(qubit_state)*p_1 + (data.num_of_repetitions - sum(qubit_state))*p_0)/data.num_of_repetitions
-    '''
+    #'''
+    else:
+        p_1 = (math.cos(data.const * F_i * data.F_degree * data.t / 2)) ** 2
+        p_0 = (math.sin(data.const * F_i * data.F_degree * data.t / 2)) ** 2
+        if qubit_state == 1: return p_1
+        else: return p_0
+    #'''
 
 
 def rect_integral_of_multiplication_probabilities(P_F_i,
@@ -108,7 +128,7 @@ def renew_probalities(new_qubit_state, data):
     :param distr: current distribution of all fields
     :return: new distribution of all fields
     '''
-    #new_qubit_state = qubit.randbin2(data, data.F)
+    new_qubit_state = qubit.randbin3(data, data.F)
     #new_qubit_state = int(round(sum([qubit.randbin(data, data.F) for i in range(data.num_of_repetitions)])/data.num_of_repetitions))
     #new_qubit_state = [qubit.randbin(data, data.F) for i in range(data.num_of_repetitions)]
     distr_storage.old_distr = data.probability_distribution.copy() # saving current meanings to reaccount all P(F_i) at once

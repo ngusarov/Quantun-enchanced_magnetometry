@@ -15,10 +15,10 @@ def gaussian(sigma, center, x):
 
 @dataclass
 class ExperimentData:
-    F = 40
+    F = 20
     F_min = 0  # min field Tesla
-    F_max = 100 # max field Tesla
-    F_degree = 10**(-11)
+    F_max = 50 # max field Tesla
+    F_degree = 10**(-9)
 
     time_const = 2
     mu = 10 ** (5) * 927 * 10**(-26)  # magnetic moment of the qubit
@@ -41,7 +41,7 @@ def perform():
     sigma = {}
     a_from_t_sum = {} #sensitivity
     a_from_step = {} #sensitivity
-    N = 28
+    N = 40
     t_sum = 0
     epsilon = 10 ** (-5)
 
@@ -65,7 +65,7 @@ def perform():
         sigma[t_sum] = current_sigma
 
         center = (experimentData.F_max + experimentData.F_min) / 2
-        a_from_t_sum[experimentData.t] = abs(center - experimentData.F) * (t_sum) ** 0.5
+        a_from_t_sum[experimentData.t] = max(abs(center - experimentData.F), current_sigma) * (t_sum) ** 0.5
         #a_from_step[step] = current_sigma * (t_sum) ** 0.5
 
         experimentData.t *= experimentData.time_const

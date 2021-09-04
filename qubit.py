@@ -14,17 +14,22 @@ def randbin(data, F): # simple math
     phi = data.const * F * data.t * data.F_degree
     p_0 = (math.sin(phi/2)) ** 2
     return np.random.choice([0, 1], size=(1,1), p=[p_0, 1-p_0]).reshape(1)[0]
-
-#IBMQ.disable_account()
-
+'''try:
+    IBMQ.disable_account()
+except Exception:
+    pass
+token = 'd450d58f70726aa812595264cebdcc1b954e95cde187217ab4cbe3be5c27a3d330fb6a8fd34007762796f423d2fd7078952738e351a7828397cc184e48d86a6e'
+provider = IBMQ.enable_account(token=token)
 backend = provider.get_backend("ibmq_manila")
 #backend = least_busy(provider.backends(filters=lambda x: not x.configuration().simulator))
 # Use Aer's qasm_simulator
+#'''
 simulator = Aer.get_backend('qasm_simulator')
 
-#'''
+
+'''
 def randbin2(data, F): #real machine
-    N = int(math.log(200*10**(-6)/data.t_init)/math.log(2))
+    N = int(math.log(data.T_2*10**(-6)/data.t_init)/math.log(2))
     N_qub = 5
 
     answers = {}
@@ -53,7 +58,7 @@ def randbin2(data, F): #real machine
             circuit.measure(i, i)
 
         # Execute the circuit on the qasm simulator
-        job = execute(circuit, backend=backend, shots=5001)
+        job = execute(circuit, backend=backend, shots=data.num_of_repetitions)
         job_monitor(job)
 
         # Grab results from the job
@@ -88,7 +93,8 @@ def randbin2(data, F): #real machine
     return answers
 
     # return counts
-    '''
+    
+    
     try:
         if counts['1'] < counts['0']:  # LOWEST BECAUSE PROBS ARE REVERSED!!!
             return 1
@@ -96,14 +102,15 @@ def randbin2(data, F): #real machine
             return 0
     except Exception:
         return abs(int(list(counts.keys())[0]) - 1)
-    '''
-# '''
+    
 
+#'''
 def randbin3(data, F): # simulator --- WORKS with reversed probabilities
     #error_1 = noise.depolarizing_error(data.phase_err, 1)
     error_1 = noise.phase_amplitude_damping_error(param_phase=data.phase_err, param_amp=data.amp_err)
+    error_2 = noise.thermal_relaxation_error(data.T_1, data.T_2, data.t*10**(6), excited_state_population=0)
     noise_model = noise.NoiseModel()
-    noise_model.add_all_qubit_quantum_error(error_1, ['rz'])
+    noise_model.add_all_qubit_quantum_error(error_2, ['rz'])
     basis_gates = noise_model.basis_gates
 
     phi = data.const * F * data.t * data.F_degree
@@ -131,10 +138,10 @@ def randbin3(data, F): # simulator --- WORKS with reversed probabilities
 
     # Returns counts
     counts = result.get_counts(circuit)
-    print(counts, 'for sim')
+    #print(counts, 'for sim')
 
     #return counts
-    #'''
+    
     try:
         if counts['1'] < counts['0']: # LOWEST BECAUSE PROBS ARE REVERSED!!!
             return 1
@@ -142,4 +149,3 @@ def randbin3(data, F): # simulator --- WORKS with reversed probabilities
             return 0
     except Exception:
         return abs(int(list(counts.keys())[0])-1)
-    #'''

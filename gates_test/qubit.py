@@ -4,8 +4,9 @@ import numpy as np
 from qiskit import (
     QuantumCircuit,
     execute,
-    Aer, QuantumRegister, ClassicalRegister)
-
+    Aer, QuantumRegister, ClassicalRegister, assemble)
+import qiskit.providers.aer.noise as noise
+from qiskit.visualization import plot_bloch_multivector, plot_histogram
 from qiskit import IBMQ
 from qiskit.tools import job_monitor
 
@@ -19,11 +20,11 @@ def randbin(data, F): # simple math
 #IBMQ.disable_account()
 
 #backend = provider.get_backend("ibmq_armonk")
-backend = least_busy(provider.backends(filters=lambda x: not x.configuration().simulator))
+#backend = least_busy(provider.backends(filters=lambda x: not x.configuration().simulator))
 # Use Aer's qasm_simulator
 simulator = Aer.get_backend('qasm_simulator')
 
-
+'''
 def randbin2(data, F): #real machine
     N = int(math.log(200*10**(-6)/data.t_init)/math.log(2))
 
@@ -69,19 +70,16 @@ def randbin2(data, F): #real machine
             answers[data.t_init*2**(i)] = 0
     return answers
 
-    # return counts
-    '''
-    try:
-        if counts['1'] < counts['0']:  # LOWEST BECAUSE PROBS ARE REVERSED!!!
-            return 1
-        else:
-            return 0
-    except Exception:
-        return abs(int(list(counts.keys())[0]) - 1)
-    '''
-# '''
+    
+'''
 
-def randbin3(data, F): # simulator --- WORKS with reversed probabilities
+def randbin3(data, F, err, time, delta): # simulator --- WORKS with reversed probabilities
+    #error_1 = noise.phase_amplitude_damping_error(param_phase=err/3, param_amp=err*2/3)
+    error_2 = noise.thermal_relaxation_error(200, 120, data.t, excited_state_population=0)
+    noise_model = noise.NoiseModel()
+    noise_model.add_all_qubit_quantum_error(error_2, ['rz'])
+    basis_gates = noise_model.basis_gates
+
     phi = data.const * F * data.t * data.F_degree
 
     q = QuantumRegister(1)
@@ -91,14 +89,18 @@ def randbin3(data, F): # simulator --- WORKS with reversed probabilities
     circuit = QuantumCircuit(q, c)
 
     circuit.h(q)
-    circuit.rz(phi, q)
+    #circuit.ry(math.pi/2+delta, q)
+    #circuit.u3(math.pi / 2, 0, math.pi, q)
+    #circuit.u3(-math.pi / 4, 0, 0, q)
+    circuit.rz(phi+delta, q)
     circuit.h(q)
 
     # Map the quantum measurement to the classical bits
     circuit.measure(q, c)
 
     # Execute the circuit on the qasm simulator
-    job = execute(circuit, simulator, shots=10000)
+    job = execute(circuit, simulator, basis_gates=basis_gates,
+                 noise_model=noise_model, shots=1000)
     #job_monitor(job)
 
     # Grab results from the job
@@ -106,6 +108,8 @@ def randbin3(data, F): # simulator --- WORKS with reversed probabilities
 
     # Returns counts
     counts = result.get_counts(circuit)
-    print(counts, 'for sim')
-
-    return int(counts['0'])/10000 #int(list(counts.keys())[0])
+    #print(counts, 'for sim')
+    try:
+        return int(counts['0'])/1000 #int(list(counts.keys())[0])
+    except Exception:
+        return 0

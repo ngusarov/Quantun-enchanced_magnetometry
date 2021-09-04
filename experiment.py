@@ -7,6 +7,7 @@ import bayesians_learning
 import plotter
 #import ramsey_qubit
 import brute_search
+from tqdm import tqdm
 
 # constants start ---------------------
 import qubit
@@ -18,13 +19,17 @@ def gaussian(in_s, F_min, delta_F, in_cen, i):
 
 @dataclass
 class ExperimentData:
-    F = 20
+    F = 25
     F_min = 0  # min field Tesla
     F_max = 50  # max field Tesla
     F_degree = 10 ** (-9)
 
     amp_err = 0.0
     phase_err = 0.0
+
+    T_1 = 110  # us
+    T_2 = 200  # us
+    OPTIMIZE = False
 
     gained_degree = 1
     delta_F = 1  # accuracy of F defining
@@ -179,7 +184,7 @@ def expand_2(x_peak, y_peak, sigma, data):
 # enlarging field segment ----------
 
 
-def perform(p_err, a_err, F):
+def perform(p_err, a_err, F, n_rep):
 
 
     experimentData = ExperimentData()
@@ -189,21 +194,21 @@ def perform(p_err, a_err, F):
     experimentData.F_max = 50  # max field Tesla
     experimentData.F_degree = 10 ** (-9)
 
-    experimentData.amp_err = 0.0
-    experimentData.phase_err = 0.0
+    experimentData.amp_err = p_err
+    experimentData.phase_err = a_err
 
     experimentData.gained_degree = 1
     experimentData.delta_F = 1  # accuracy of F defining
     experimentData.fields_number = round((experimentData.F_max - experimentData.F_min + experimentData.delta_F) / experimentData.delta_F)  # amount of discrete F meanings
-    time_const = 2
+    experimentData.time_const = 2
     experimentData.mu = 10 ** (5) * 927 * 10 ** (-26)  # magnetic moment of the qubit
     experimentData.h = 6.62 * 10 ** (-34)  # plank's constant
     experimentData.const = experimentData.mu / experimentData.h  # mu/h
     experimentData.t = math.pi / (experimentData.const * experimentData.F_degree * experimentData.F_max / 2) * 2 ** (-1)
     experimentData.t_init = experimentData.t  # time of interaction in seconds
-    experimentData.num_of_repetitions = 101  # repetitions for one experiment
+    experimentData.num_of_repetitions = n_rep  # repetitions for one experiment
 
-    experimentData.probability_distribution = [gaussian(50, 0, 1, 25, i)
+    experimentData.probability_distribution = [gaussian(15, 0, 1, 25, i)
                                 for i in
                                 range(experimentData.fields_number)]
 
@@ -217,26 +222,34 @@ def perform(p_err, a_err, F):
     a_from_step = {} #sensitivity
     N = 45
     t_sum = 0
-    epsilon = 10 ** (-3)
+    epsilon = 20 * 10 ** (-3)  # 10 pT
     prev_sigma = experimentData.F_max - experimentData.F_min
     flag = False
     prev_step = 0
     prev_entropy_step = -1
-    #
+
     fig, ax = plt.subplots()
+    font = {'fontname': 'Times New Roman'}
+    ax.set_title(r'b)')
     ax.minorticks_on()
+    ax.grid(which='major', axis='both')
+    ax.grid(which='minor', axis='both', linestyle=':')
+
+    # Подписи:
+    ax.set_xlabel("Field segment, $nT$", **font)
+    ax.set_ylabel(r'$P(F_k)$', **font)
 
     print(experimentData.probability_distribution) # initial
     print(experimentData.fields_number)
-    plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
-             [each for each in experimentData.probability_distribution])
+    ax.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
+             [each for each in experimentData.probability_distribution], label='k=0')
 
-    answers = qubit.randbin2(experimentData, experimentData.F)
+    #answers = qubit.randbin2(experimentData, experimentData.F)
 
     for step in range(N):
 
-        bayesians_learning.renew_probalities(answers[experimentData.t], experimentData)
-        #bayesians_learning.renew_probalities(qubit.randbin3(experimentData, F), experimentData)
+        #bayesians_learning.renew_probalities(answers[experimentData.t], experimentData)
+        bayesians_learning.renew_probalities(1, experimentData)
         #bayesians_learning.renew_probalities(qubit.randbin2(experimentData, F), experimentData)
         #bayesians_learning.renew_probalities(ramsey_qubit.output(experimentData.t), experimentData)
         t_sum += experimentData.t * experimentData.num_of_repetitions
@@ -250,7 +263,7 @@ def perform(p_err, a_err, F):
 
         #a_from_t_sum[t_sum] = current_sigma * (t_sum) ** 0.5
         #a_from_step[step] = current_sigma * (t_sum) ** 0.5
-        a_from_t_sum[experimentData.t] = max(abs(experimentData.F - x_peak), current_sigma) * (t_sum) ** 0.5
+        a_from_t_sum[experimentData.t] = (1/5**0.5)*max(abs(experimentData.F - x_peak), current_sigma) * (t_sum) ** 0.5
         #a_from_t_sum[experimentData.t] = max(abs(experimentData.F - x_peak), current_sigma)
 
         if current_sigma != 0:
@@ -266,29 +279,29 @@ def perform(p_err, a_err, F):
             prev_sigma = current_sigma
             prev_step = step
             experimentData.t *= experimentData.time_const
-            print(step)
+            #print(step)
 
         if flag and prev_sigma < current_sigma:
             prev_sigma = current_sigma
 
-        if (step) % 1 == 0:
-            plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], [each for each in experimentData.probability_distribution]) # distr each _ steps
+        if (step) % 10 == 0:
+            ax.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], [each for each in experimentData.probability_distribution], label='k={}'.format(step+1)) # distr each _ steps
 
-        if (step + 1) % 1 == 0:
-            print(bayesians_learning.integrate_distribution(experimentData), num_of_peaks, pseudo_entropy, x_peak, y_peak, step, current_sigma, prev_sigma, experimentData.t, experimentData.const * experimentData.F * experimentData.t*experimentData.F_degree, flag) # checking ~ 1
+        #if (step + 1) % 1 == 0:
+        #    print(bayesians_learning.integrate_distribution(experimentData), num_of_peaks, pseudo_entropy, x_peak, y_peak, step, current_sigma, prev_sigma, experimentData.t, experimentData.const * experimentData.F * experimentData.t*experimentData.F_degree, flag) # checking ~ 1
 
         if pseudo_entropy == 1 or num_of_peaks == 1:
-            experimentData.num_of_repetitions = 101
+            experimentData.num_of_repetitions = n_rep
 
         if pseudo_entropy > 1 and step - prev_entropy_step > 1 and num_of_peaks == 1:
-            experimentData.num_of_repetitions = 101
+            experimentData.num_of_repetitions = n_rep
             experimentData.t /= experimentData.time_const ** (0)
             prev_entropy_step = step
 
 
         if num_of_peaks > 1:
             experimentData.t /= experimentData.time_const ** (0)
-            experimentData.num_of_repetitions = 101
+            experimentData.num_of_repetitions = n_rep
 
         if pseudo_entropy > 2 or num_of_peaks > 2:
             experimentData.t /= experimentData.time_const ** (1)
@@ -296,29 +309,39 @@ def perform(p_err, a_err, F):
         if pseudo_entropy > 3 or num_of_peaks > 3:
             experimentData.t /= experimentData.time_const ** (1)
 
-        if flag and current_sigma*experimentData.gained_degree <= 5*experimentData.delta_F or num_of_peaks > 1:
-            plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
-                     [each for each in experimentData.probability_distribution])
+        if flag and current_sigma*experimentData.gained_degree <= 7*experimentData.delta_F or num_of_peaks > 1:
+            #plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
+            #         [each for each in experimentData.probability_distribution], label='k={}'.format(step+1))
+            plt.legend(loc="best")
             plt.show()
             plt.close()
 
             fig, ax = plt.subplots()
             ax.minorticks_on()
+            ax.set_title(r'b)')
+            ax.grid(which='major', axis='both')
+            ax.grid(which='minor', axis='both', linestyle=':')
+
+            # Подписи:
+            ax.set_xlabel("Field segment, $nT$", **font)
+            ax.set_ylabel(r'$P(F_k)$', **font)
 
             expand_2(x_peak, y_peak, current_sigma, experimentData)
             plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
-                     [each for each in experimentData.probability_distribution])
-            print(experimentData.probability_distribution)
+                     [each for each in experimentData.probability_distribution], label='k={}'.format(step+1))
+            #print(experimentData.probability_distribution)
 
         if experimentData.t >= 200*10**(-6):
             break
 
-    plt.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], experimentData.probability_distribution) # final distr
+    '''ax.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], experimentData.probability_distribution, label='final') # final distr
+    plt.legend(loc="best")
+
     plt.show()
     #fig.savefig('distr_' + '.png', dpi=500)
-    plt.close()
-    print("t_sum: ", list(sigma.keys())[-1], ', sigma:', list(sigma.values())[-1])
-    print("t_coh_max: ", list(a_from_t_sum.keys())[-1] * 10**6, ", sensitivity: ", list(a_from_t_sum.values())[-1]*experimentData.F_degree)
+    plt.close()'''
+    #print("t_sum: ", list(sigma.keys())[-1], ', sigma:', list(sigma.values())[-1])
+    #print("t_coh_max: ", list(a_from_t_sum.keys())[-1] * 10**6, ", sensitivity: ", list(a_from_t_sum.values())[-1]*experimentData.F_degree)
     '''try:
         plotter.plotting_sensitivity(a_from_step, r'$N$')
     except Exception:
@@ -327,18 +350,21 @@ def perform(p_err, a_err, F):
         plotter.plotting_sensitivity(a_from_t_sum, r'$t_{sum}$')
     except Exception:
         pass'''
-    '''try:
-        plotter.plotting_sensitivity(a_from_t_sum, r'$t_{coherense\_max}, \, \mu s$')
-    except Exception:
-        pass'''
+    #try:
+    #    plotter.plotting_sensitivity(a_from_t_sum, r'$t_{coherense\_max}, \, \mu s$')
+    #except Exception:
+    #    pass
 
     #print("final sensitivity: ", a_from_t_sum[t_sum]*10**(-9))
 
     x_peak, y_peak = find_peak(experimentData)
+    succeeded = 0
+    if abs(x_peak - experimentData.F) <= epsilon:
+        succeeded = 1
 
-    #plotter.plotting(sigma)
-
-    return a_from_t_sum
+    plotter.plotting(sigma)
+    return succeeded
+    #return a_from_t_sum
 
 '''def average_20(Field, F_max):
     F = []
@@ -363,7 +389,6 @@ def perform(p_err, a_err, F):
 '''
 
 if __name__ == "__main__":
-    '''
     types_of_dots = [
         '.',
         'x',
@@ -380,41 +405,100 @@ if __name__ == "__main__":
         'purple'
     ]
 
+    '''fig, ax = plt.subplots()
+    ax.minorticks_on()
+    ax.grid(which='major', axis='both')
+    ax.grid(which='minor', axis='both', linestyle=':')
+
+    font = {'fontname': 'Times New Roman'}
+    ax.set_xlabel(r'$n_{rep}$', **font)
+    ax.set_ylabel(r'Success rate', **font)'''
+    '''for j in tqdm(range(1)):
+        err = 0.2*j
+        suc_rate = []
+        reps = []
+        K = 1
+        for rep in tqdm(range(51, 52)):
+            sum = 0
+            for k in range(K):
+                try:
+                    sum += perform(0, err, 20, rep)
+                except Exception:
+                    pass
+            print('err ', err ,' rep ', rep, ' suc ', sum/K)
+            reps.append(rep)
+            suc_rate.append(sum / K)
+    '''
+    '''    ax.plot(reps, suc_rate, types_of_dots[j%5],
+                c=types_of_colors[j%6], ls='-', label='a={}'.format(round(err, 1)))
+    plt.legend(loc='best')
+    plt.show()
+    plt.close()'''
+
+    '''
+
     fig, ax = plt.subplots()
     ax.minorticks_on()
     ax.grid(which='major', axis='both')
     ax.grid(which='minor', axis='both', linestyle=':')
+
+    font = {'fontname': 'Times New Roman'}
+    ax.set_xlabel(r'$T_2$, $\mu s$', **font)
+    ax.set_ylabel(r'Success rate', **font)
     '''
-    for i in range(1):
-        err = 0.05*i
-        adaptive = perform(0, err, 24)
-        for k in range(0):
-            for j in range(1):
-                adaptive_2 = perform(0, err, 5+j*10)
-                for each in(list(adaptive.keys())):
-                    adaptive[each] += adaptive_2[each]
+    T_2_arr = []
+    sum_arr = []
+    ExperimentData.OPTIMIZE = False
+    K = 1
+    J = 1
+    total = K*J
+    for i in tqdm(range(1)):
+        ExperimentData.T_2 = 10
+        ExperimentData.T_1 = 0.75*ExperimentData.T_2
+        sum = 0
+        for k in range(K):
+            for j in range(J):
+                try:
+                    sum += perform(0, 0, 5+j*10, 91)
+                except Exception:
+                    pass # total -= 1
+        sum /= total
+        print('T_2 ', ExperimentData.T_2, ' rate ', sum)
+        T_2_arr.append(ExperimentData.T_2)
+        sum_arr.append(sum)
 
-        for each in (list(adaptive.keys())):
-            adaptive[each] /= 0*1+1
+    #ax.plot(T_2_arr, sum_arr, types_of_dots[0],
+    #            c=types_of_colors[1], ls='-', label='No optimization')
 
+    ExperimentData.OPTIMIZE = True
 
-        plotter.plotting_sensitivity(adaptive, r'$t_{coherense\_max}, \, \mu s$')
+    T_2_arr = []
+    sum_arr = []
+    total = K * J
+    for i in tqdm(range(1)):
+        ExperimentData.T_2 = 10
+        ExperimentData.T_1 = 0.75 * ExperimentData.T_2
+        sum = 0
+        for k in range(K):
+            for j in range(J):
+                try:
+                    sum += perform(0, 0, 5 + j * 10, 91)
+                except Exception:
+                    pass # total -= 1
+        sum /= total
+        print('T_2 ', ExperimentData.T_2, ' rate ', sum)
+        T_2_arr.append(ExperimentData.T_2)
+        sum_arr.append(sum)
 
-        '''
-        step_delay = len(list(adaptive.keys())) - 4
-        x = [each * 10 ** 6 for each in list(adaptive.keys())[step_delay:]]
-        y = [each for each in list(adaptive.values())[step_delay:]]
-        x_p = np.linspace(min(x[:]), max(x[:]))
-        ax.plot(x, y, types_of_dots[int(i%5)],
-                c=types_of_colors[int(i%6)],
-                label='amplitude_err=' + str(round(err, 3)))
+    #ax.plot(T_2_arr, sum_arr, types_of_dots[0],
+    #        c=types_of_colors[0], ls='-', label='Optimization')
+
+    #plt.legend(loc='best', prop={'size': 10})
+    #plt.show()
+    #plt.close()
+    #'''
         
-
-    plt.legend(loc='best', prop={'size': 10})
-
-    plt.show()
-    plt.close()
-    '''
+    
     #brute = brute_search.perform()
 
     #plotter.plotting_compilation(adaptive, brute, r'$t_{coherense\_max}, \, \mu s$')
