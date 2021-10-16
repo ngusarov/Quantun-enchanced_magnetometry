@@ -35,10 +35,10 @@ mean = np.mean(results)
 plt.figure(figsize=[4, 4])
 # Plot all the results
 # All results from the gnd_schedule are plotted in blue
-#plt.scatter(np.real(results), np.imag(results),
-#                s=5, cmap='viridis', c='blue', alpha=0.5, label='state_0')
-plt.scatter(np.real(mean), np.imag(mean),
-            s=200, cmap='viridis', c='black',alpha=1.0, label='state_0_mean')
+plt.plot(np.real(results), np.imag(results), '.',
+                s=5, cmap='viridis', c='blue', alpha=0.5, label='state_0')
+#plt.scatter(np.real(mean), np.imag(mean),
+#            s=200, cmap='viridis', c='black',alpha=1.0, label='state_0_mean')
 
 # Plot a large dot for the average result of the 0 and 1 states.
 #mean_gnd = -1.66-1.5j # takes mean of both real and imaginary parts

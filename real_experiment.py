@@ -1,11 +1,30 @@
 from qiskit import IBMQ
 from qiskit.providers.ibmq import least_busy
+from qiskit.tools.monitor import job_monitor
+import matplotlib.pyplot as plt
 
 import numpy as np
-import experiment
+
 import math
 
-data = experiment.ExperimentData()
+
+from scipy.optimize import curve_fit
+
+
+def fit_function(x_values, y_values, function, init_params):
+    fitparams, conv = curve_fit(function, x_values, y_values, init_params)
+    y_fit = function(x_values, *fitparams)
+
+    return fitparams, y_fit
+
+
+# samples need to be multiples of 16
+def get_closest_multiple_of_16(num):
+    return int(num + 8 ) - (int(num + 8 ) % 16)
+
+from qiskit import pulse  # This is where we access all of our Pulse features!
+from qiskit.circuit import Parameter  # This is Parameter Class for variable parameters.
+
 '''detuning_Hz = data.F_degree*(data.const * data.F)
 print("initial time: ", data.t_init*10**6, ' us')
 print("detuning: ", detuning_Hz*10**(-6), ' MHz')
@@ -47,7 +66,7 @@ given_qubit_frequency = backend.properties().frequency(qubit)
 print('Qubit declared frequency is: ', given_qubit_frequency/GHz, 'GHz')
 #-------------------------------------------------------------------------------
 # The sweep will be centered around the estimated qubit frequency.
-center_frequency_Hz = backend_defaults.qubit_freq_est[qubit]        # The default frequency is given in Hz
+center_frequency_Hz = given_qubit_frequency        # The default frequency is given in Hz
                                                                     # warning: this will change in a future release
 print(f"Qubit {qubit} has an estimated frequency of {center_frequency_Hz / GHz} GHz.")
 
@@ -56,7 +75,7 @@ scale_factor = 1e-14
 
 
 
-center_frequency_Hz = 4.97167 * GHz
+#center_frequency_Hz = 4.97167 * GHz
 # We will sweep 40 MHz around the estimated frequency
 frequency_span_Hz = 20 * MHz
 # in steps of 1 MHz.
@@ -73,19 +92,14 @@ frequencies_GHz = np.arange(frequency_min / GHz,
 print(f"The sweep will go from {frequency_min / GHz} GHz to {frequency_max / GHz} GHz \
 in steps of {frequency_step_Hz / MHz} MHz.")
 
-# samples need to be multiples of 16
-def get_closest_multiple_of_16(num):
-    return int(num + 8 ) - (int(num + 8 ) % 16)
 
-from qiskit import pulse  # This is where we access all of our Pulse features!
-from qiskit.circuit import Parameter  # This is Parameter Class for variable parameters.
 
 # Drive pulse parameters (us = microseconds)
 drive_sigma_sec = 0.075 * us  # This determines the actual width of the gaussian
 drive_duration_sec = drive_sigma_sec * 8  # This is a truncating parameter, because gaussians don't have
 # a natural finite length
 
-
+'''
 drive_amp = 0.05
 
 # Create the base schedule
@@ -115,13 +129,13 @@ job = backend.run(schedules,
                   meas_return='avg',
                   shots=num_shots_per_frequency)
 
-from qiskit.tools.monitor import job_monitor
+
 
 job_monitor(job)
 
 frequency_sweep_results = job.result(timeout=120) # timeout parameter set to 120 seconds
 
-import matplotlib.pyplot as plt
+
 
 sweep_values = []
 for i in range(len(frequency_sweep_results.results)):
@@ -129,47 +143,43 @@ for i in range(len(frequency_sweep_results.results)):
     res = frequency_sweep_results.get_memory(i)*scale_factor
     # Get the results for `qubit` from this experiment
     sweep_values.append(res[qubit])
-
-plt.scatter(frequencies_GHz, np.real(sweep_values), color='black') # plot real part of sweep values
+#'''
+'''
+plt.plot(frequencies_GHz, np.real(sweep_values), color='blue') # plot real part of sweep values
 plt.xlim([min(frequencies_GHz), max(frequencies_GHz)])
-plt.xlabel("Frequency [GHz]")
-plt.ylabel("Measured signal [a.u.]")
+plt.xlabel("Frequency, GHz")
+plt.ylabel("Measured signal, a.u.")
 plt.show()
-
-from scipy.optimize import curve_fit
-
-
-def fit_function(x_values, y_values, function, init_params):
-    fitparams, conv = curve_fit(function, x_values, y_values, init_params)
-    y_fit = function(x_values, *fitparams)
-
-    return fitparams, y_fit
+'''
 
 
+'''
 fit_params, y_fit = fit_function(frequencies_GHz,
                                  np.real(sweep_values),
-                                 lambda x, A, q_freq, B, C: -(A / np.pi) * (B / ((x - q_freq)**2 + B**2)) + C,
+                                 lambda x, A, q_freq, B, C: +(A / np.pi) * (B / ((x - q_freq)**2 + B**2)) + C,
                                  [0.005, 4.975, 0.001, 3.3] # initial parameters for curve_fit
                                 )
 
-plt.scatter(frequencies_GHz, np.real(sweep_values), color='black')
-plt.plot(frequencies_GHz, y_fit, color='red')
+plt.plot(frequencies_GHz, np.real(sweep_values), color='blue', label='measured signal')
+plt.plot(frequencies_GHz, y_fit, color='black', label='fitting curve')
 plt.xlim([min(frequencies_GHz), max(frequencies_GHz)])
 
-plt.xlabel("Frequency [GHz]")
-plt.ylabel("Measured Signal [a.u.]")
+plt.xlabel("Frequency, GHz")
+plt.ylabel("Measured Signal, a.u.")
+plt.title('Resonance curve', fontsize=15)
+plt.legend(loc='best')
 plt.show()
 
 A, rough_qubit_frequency, B, C = fit_params
 rough_qubit_frequency = rough_qubit_frequency*GHz # make sure qubit freq is in Hz
 print(f"We've updated our qubit frequency estimate from "
-      f"{round(backend_defaults.qubit_freq_est[qubit] / GHz, 9)} GHz to {round(rough_qubit_frequency/GHz, 9)} GHz.")
+      f"{round(given_qubit_frequency, 9)} Hz to {round(rough_qubit_frequency, 9)} Hz.")
 
 print("Difference between given and found ", (rough_qubit_frequency - given_qubit_frequency)/MHz, " MHz")
 #-------------------------------------------------------------------------------
-
-#rough_qubit_frequency = 4.97167 * GHz
-
+#'''
+rough_qubit_frequency = 4971566561.950615
+#'''
 #print(f"We've updated our qubit frequency estimate from "
 #      f"{round(backend_defaults.qubit_freq_est[qubit] / GHz, 7)} GHz to {round(rough_qubit_frequency/GHz, 7)} GHz.")
 
@@ -180,13 +190,13 @@ print("Difference between given and found ", (rough_qubit_frequency - given_qubi
     # `qubit`,
     # `measure`, and
     # `rough_qubit_frequency`.
-
+'''
 # Rabi experiment parameters
-num_rabi_points = 50
+num_rabi_points = 75
 
 # Drive amplitude values to iterate over: 50 amplitudes evenly spaced from 0 to 0.75
 drive_amp_min = 0
-drive_amp_max = 0.75
+drive_amp_max = 0.4
 drive_amps = np.linspace(drive_amp_min, drive_amp_max, num_rabi_points)
 
 # Build the Rabi experiments:
@@ -230,44 +240,48 @@ for i in range(num_rabi_points):
     rabi_values.append(rabi_results.get_memory(i)[qubit] * scale_factor)
 
 rabi_values = np.real(baseline_remove(rabi_values))
-
+#'''
+'''
 plt.xlabel("Drive amp [a.u.]")
 plt.ylabel("Measured signal [a.u.]")
 plt.scatter(drive_amps, rabi_values, color='black') # plot real part of Rabi values
 plt.show()
-
+'''
+'''
 
 fit_params, y_fit = fit_function(drive_amps,
                                  rabi_values,
                                  lambda x, A, B, drive_period, phi: (A*np.cos(2*np.pi*x/drive_period - phi) + B),
                                  [3, 0.1, 0.3, 0])
 
-plt.scatter(drive_amps, rabi_values, color='black')
-plt.plot(drive_amps, y_fit, color='red')
+plt.plot(drive_amps, rabi_values, '.', color='blue', label='measured signal')
+plt.plot(drive_amps, y_fit, color='black', label='fitting curve')
 
 drive_period = fit_params[2] # get period of rabi oscillation
 
-plt.axvline(drive_period/2, color='red', linestyle='--')
-plt.axvline(drive_period, color='red', linestyle='--')
+plt.axvline(drive_period/2, color='blue', linestyle='--')
+plt.axvline(drive_period, color='blue', linestyle='--')
 plt.annotate("", xy=(drive_period, 0), xytext=(drive_period/2,0), arrowprops=dict(arrowstyle="<->", color='red'))
 plt.annotate("$\pi$", xy=(drive_period/2-0.03, 0.1), color='red')
 
-plt.xlabel("Drive amp [a.u.]", fontsize=15)
-plt.ylabel("Measured signal [a.u.]", fontsize=15)
+plt.xlabel("Drive amp, a.u.", fontsize=15)
+plt.ylabel("Measured signal, a.u.", fontsize=15)
+plt.title('Rabi Experiment', fontsize=15)
+plt.legend(loc='best')
 plt.show()
 
 pi_amp = abs(drive_period / 2)
-
-#pi_amp = 0.1409737344919153
-#pi_amp = 0.14100094748281855
-print(f"Pi Amplitude = {pi_amp}")
+#'''
+pi_amp = 0.14942461600235429353134009034
+#pi_amp = 0.1516
+print(f"Pi Amplitude = {format(pi_amp, '.30g')}")
 
 
 #------------------------------------------------------------------------------------
 #----------------------------------Discrimination------------------------------------
 #------------------------------------------------------------------------------------
 
-
+'''
 with pulse.build(backend) as pi_pulse:
     drive_duration = get_closest_multiple_of_16(pulse.seconds_to_samples(drive_duration_sec))
     drive_sigma = pulse.seconds_to_samples(drive_sigma_sec)
@@ -314,10 +328,10 @@ plt.figure()
 # Plot all the results
 # All results from the gnd_schedule are plotted in blue
 plt.scatter(np.real(gnd_results), np.imag(gnd_results),
-                s=5, cmap='viridis', c='blue', alpha=0.5, label='state_0')
+                s=5, cmap='viridis', c='#069AF3', alpha=0.5, label='state |0>')
 # All results from the exc_schedule are plotted in red
 plt.scatter(np.real(exc_results), np.imag(exc_results),
-                s=5, cmap='viridis', c='red', alpha=0.5, label='state_1')
+                s=5, cmap='viridis', c='#FF6347', alpha=0.5, label='state |1>')
 
 plt.axis('square')
 
@@ -325,37 +339,33 @@ plt.axis('square')
 mean_gnd = np.mean(gnd_results) # takes mean of both real and imaginary parts
 mean_exc = np.mean(exc_results)
 
-
-#mean_gnd = (3.2613036429457596+14.105148448440321j)
-#mean_exc = (-1.6603515402460798+16.63620406837248j)
-print("Ground mean: ", mean_gnd)
-print("Excited mean: ", mean_exc)
+print("Ground mean: ", format(mean_gnd, '.30g'))
+print("Excited mean: ", format(mean_exc, '.30g'))
 
 plt.scatter(np.real(mean_gnd), np.imag(mean_gnd),
-            s=200, cmap='viridis', c='black',alpha=1.0, label='state_0_mean')
+            s=200, cmap='viridis', c='#0000FF',alpha=1.0, label='state |0> mean')
 plt.scatter(np.real(mean_exc), np.imag(mean_exc),
-            s=200, cmap='viridis', c='black',alpha=1.0, label='state_1_mean')
+            s=200, cmap='viridis', c='#E50000',alpha=1.0, label='state |1> mean')
 
-plt.ylabel('I [a.u.]', fontsize=15)
-plt.xlabel('Q [a.u.]', fontsize=15)
-plt.title("0-1 discrimination", fontsize=15)
-
+plt.ylabel('I, a.u.', fontsize=15)
+plt.xlabel('Q, a.u.', fontsize=15)
+plt.title("States discrimination", fontsize=15)
+plt.legend(loc='best')
 plt.show()
 
-
+#'''
 def classify(point: complex):
     """Classify the given state as |0> or |1>."""
     def distance(a, b):
         return math.sqrt((np.real(a) - np.real(b))**2 + (np.imag(a) - np.imag(b))**2)
     return int(distance(point, mean_exc) < distance(point, mean_gnd))
 
-'''
-#mean_gnd = -1.66-1.5j # takes mean of both real and imaginary parts
-#mean_exc = 0.44+7.45j
-mean_gnd = (-17.6155951333376-9.4155731402752j)
-mean_exc = (-13.75797167652864-15.203761096622081j)
-'''
 
+
+mean_gnd = (4.2593050764902402605116549239-12.9357605719244794784117402742j)
+mean_exc = (8.62958498234367965551427914761-10.6105558047129591159318806604j)
+
+'''
 # Ramsey experiment parameters
 time_max_sec = 1.8 * us
 time_step_sec = 0.025 * us
@@ -407,14 +417,16 @@ ramsey_values = []
 for i in range(len(delay_times_sec)):
     iq_data = ramsey_results.get_memory(i)[:, qubit] * scale_factor
     ramsey_values.append(sum(map(classify, iq_data)) / num_shots)
-
+#'''
+'''
 plt.scatter(delay_times_sec / us, np.real(ramsey_values), color='black')
 plt.xlim(0, np.max(delay_times_sec / us))
 plt.title("Ramsey Experiment", fontsize=15)
 plt.xlabel('Delay between X90 pulses [$\mu$s]', fontsize=15)
 plt.ylabel('Measured Signal [a.u.]', fontsize=15)
 plt.show()
-
+'''
+'''
 fit_params, y_fit = fit_function(delay_times_sec/us, np.real(ramsey_values),
                                  lambda x, A, del_f_MHz, C, B: (
                                           A * np.cos(2*np.pi*del_f_MHz*x - C) + B
@@ -425,50 +437,60 @@ fit_params, y_fit = fit_function(delay_times_sec/us, np.real(ramsey_values),
 # Off-resonance component
 _, del_f_MHz, _, _, = fit_params # freq is MHz since times in us
 
-plt.scatter(delay_times_sec/us, np.real(ramsey_values), color='black')
-plt.plot(delay_times_sec/us, y_fit, color='red', label=f"df = {del_f_MHz:.2f} MHz")
+plt.plot(delay_times_sec/us, np.real(ramsey_values), '.', color='blue', label='measured signal')
+plt.plot(delay_times_sec/us, y_fit, color='black', label='fitting curve')
 plt.xlim(0, np.max(delay_times_sec/us))
-plt.xlabel('Delay between X90 pulses [$\mu$s]', fontsize=15)
-plt.ylabel('Measured Signal [a.u.]', fontsize=15)
+plt.xlabel('Delay between X90 pulses, $\mu$s', fontsize=15)
+plt.ylabel('Measured Signal, a.u.', fontsize=15)
 plt.title('Ramsey Experiment', fontsize=15)
 plt.legend()
 plt.show()
 
 precise_qubit_freq = rough_qubit_frequency + (del_f_MHz - detuning_MHz) * MHz # get new freq in Hz
-print(f"Our updated qubit frequency is now {round(precise_qubit_freq/GHz, 6)} GHz. "
-      f"It used to be {round(rough_qubit_frequency / GHz, 6)} GHz")
+print(f"Our updated qubit frequency is now {round(precise_qubit_freq, 9)} Hz. "
+      f"It used to be {round(rough_qubit_frequency, 9)} Hz")
+#'''
+precise_qubit_freq = 4971518730.049212
+import experiment
+data = experiment.ExperimentData()
+'''
+# Ramsey experiment parameters
+detuning_max_MHz = data.const*data.F_max*data.F_degree/(2*math.pi)/MHz/30
+delta_min_det_MHz = -0.05 - 0.02 - 0.12 - 0.22
+delta_max_det_MHz = -0.05 - 0.05 - 0.05 - 0.12 - 0.15
+detuning_s_MHz = np.arange(delta_min_det_MHz, detuning_max_MHz+delta_max_det_MHz, detuning_max_MHz/60)
+print("max det: ", detuning_max_MHz)
+time = data.t_init*4*30
 
+# Drive parameters
+# The drive amplitude for pi/2 is simply half the amplitude of the pi pulse
+drive_amp = pi_amp / 2
 
-detuning_MHz = 2
-ramsey_frequency = round(precise_qubit_freq + detuning_MHz * MHz, 6) # need ramsey freq in Hz
-#fields_nT = np.linspace(data.F_min, data.F_max/2**5, 50)
-data.t = 1*us
-times = np.linspace(0, 2, 74)
-#detunings_MHz = np.linspace(0, data.F_max*data.F_degree*data.const / MHz / 10, 74)
-# for real detunings are not 0..2 but (0..2 + (2*0.288-1)/(2*2.212))*8.48
+# x_90 is a concise way to say pi_over_2; i.e., an X rotation of 90 degrees
+with pulse.build(backend) as x90_pulse:
+    drive_duration = get_closest_multiple_of_16(pulse.seconds_to_samples(drive_duration_sec))
+    drive_sigma = pulse.seconds_to_samples(drive_sigma_sec)
+    drive_chan = pulse.drive_channel(qubit)
+    pulse.play(pulse.Gaussian(duration=drive_duration,
+                              amp=drive_amp,
+                              sigma=drive_sigma,
+                              name='x90_pulse'), drive_chan)
+
 # create schedules for Ramsey experiment
 ramsey_schedules = []
-#phis = np.linspace(-2*math.pi, 2*math.pi, 74)
-for time in times:
-    #detuning_MHz = phi/(2*math.pi*MHz*data.t)
-    #detuning_MHz = detuning_MHz - (2*0.1-1)/(2*2.0)
-    time *= us
-    print('detuning: ', detuning_MHz, ' MHz')
-    print('phi: ', 2*math.pi*detuning_MHz*MHz*time, ' radians')
-    ramsey_frequency = round(precise_qubit_freq + detuning_MHz*MHz, 9)
-    print('rams freq: ', ramsey_frequency/GHz, ' GHz')
-    with pulse.build(backend=backend, default_alignment='sequential', name=f"Ramsey detuning = {detuning_MHz} MHz") as ramsey_schedule:
+for detuning_MHz in detuning_s_MHz:
+    ramsey_frequency = round(precise_qubit_freq + detuning_MHz * MHz, 6)  # need ramsey freq in Hz
+    with pulse.build(backend=backend, default_alignment='sequential', name=f"det = {detuning_MHz} MHz") as ramsey_schedule:
         drive_chan = pulse.drive_channel(qubit)
         pulse.set_frequency(ramsey_frequency, drive_chan)
         pulse.call(x90_pulse)
         pulse.delay(get_closest_multiple_of_16(pulse.seconds_to_samples(time)), drive_chan)
-        print("Delay samples: ", pulse.seconds_to_samples(time), ' n')
         pulse.call(x90_pulse)
         pulse.measure(qubits=[qubit], registers=[pulse.MemorySlot(mem_slot)])
     ramsey_schedules.append(ramsey_schedule)
 
 # Execution settings
-num_shots = 1024
+num_shots = 256
 
 job = backend.run(ramsey_schedules,
                   meas_level=1,
@@ -481,109 +503,141 @@ ramsey_results = job.result(timeout=120)
 
 ramsey_values = []
 
-for i in range(len(times)):
+for i in range(len(detuning_s_MHz)):
     iq_data = ramsey_results.get_memory(i)[:, qubit] * scale_factor
     ramsey_values.append(sum(map(classify, iq_data)) / num_shots)
 
-plt.scatter(times, ramsey_values, color='black')
-plt.title("Ramsey Experiment", fontsize=15)
-plt.xlabel('Delay [$\mu$ s]', fontsize=15)
-plt.ylabel('Measured Signal [a.u.]', fontsize=15)
+plt.plot(detuning_s_MHz, np.real(ramsey_values), '.', color='blue', label='probability')
+#plt.xlim(0, np.max(delay_times_sec / us))
+#plt.title("Ramsey Experiment", fontsize=15)
+plt.xlabel('Detuning, MHz', fontsize=15)
+plt.ylabel('$P_{|1>}$', fontsize=15)
+plt.legend(loc='best')
 plt.show()
-
-
-fit_params, y_fit = fit_function(times, np.real(ramsey_values),
+#'''
+'''
+fit_params, y_fit = fit_function(delay_times_sec/us, np.real(ramsey_values),
                                  lambda x, A, del_f_MHz, C, B: (
-                                          A * np.cos(2*np.pi*del_f_MHz*x - C*2*np.pi) + B
+                                          A * np.cos(2*np.pi*del_f_MHz*x - C) + B
                                          ),
-                                 [0.4, 1/6.28, 0.1, 0.4]
+                                 [5, 1./0.4, 0, 0.25]
                                 )
 
 # Off-resonance component
-_, del_f_MHz, C, _, = fit_params # freq is MHz since times in us
+_, del_f_MHz, _, _, = fit_params # freq is MHz since times in us
 
-plt.scatter(times, np.real(ramsey_values), color='black')
-plt.plot(times, y_fit, color='red', label=f"per = {del_f_MHz:.3f} MHz, ph = {C:.3f}")
-plt.xlabel('Delay between X90 pulses [$\mu$s]', fontsize=15)
+plt.scatter(detuning_s_MHz, np.real(ramsey_values), color='black')
+plt.plot(detuning_s_MHz, y_fit, color='red', label=f"df = {del_f_MHz:.2f} MHz")
+plt.xlim(0, np.max(delay_times_sec/us))
+plt.xlabel('Detuning [MHz]', fontsize=15)
 plt.ylabel('Measured Signal [a.u.]', fontsize=15)
 plt.title('Ramsey Experiment', fontsize=15)
 plt.legend()
 plt.show()
-
-#precise_qubit_freq = rough_qubit_frequency + (del_f_MHz - detuning_MHz) * MHz # get new freq in Hz
-#print(f"Our updated qubit frequency is now {round(precise_qubit_freq/GHz, 6)} GHz. "
-#      f"It used to be {round(rough_qubit_frequency / GHz, 6)} GHz")
-
 '''
-def output(t):
+
+def output(data):
+    print("We have F: ", data.F, " nT")
+
+    N_delta = 2
+
+
+    N = int(math.log(data.T_2 * 10 ** (-6) / data.t_init) / math.log(2))-N_delta
+    multiplier = 30
+
     # Ramsey experiment parameters
-    t /= us
-    time_max_us = 1.8
-    time_step_us = 0.025
-    times_us = np.full(60, t) #np.arange(t, t+time_step_us, time_step_us)
-    print(times_us)
-    # Convert to units of dt
-    delay_times_dt = times_us * us / dt
+    detuning_max_MHz = data.const * data.F_max * data.F_degree / (2 * math.pi) / MHz / multiplier
+    detuning_min_MHz = data.const * data.F_min * data.F_degree / (2 * math.pi) / MHz / multiplier
+    detuning_MHz = data.const * data.F * data.F_degree / (2 * math.pi) / MHz / multiplier
+
+    delta_min_det_MHz = -0.05 - 0.02 - 0.12 - 0.22
+    delta_max_det_MHz = -0.05 - 0.05 - 0.05 - 0.12 - 0.20
+
+    detuning_MHz = (detuning_min_MHz+delta_min_det_MHz) + (detuning_max_MHz+delta_max_det_MHz - (detuning_min_MHz+delta_min_det_MHz))*(detuning_MHz - detuning_min_MHz)/(detuning_max_MHz-detuning_min_MHz)
+
+    times = [data.t_init*2**(i) for i in range(N)]
+
+    # Drive parameters
+    # The drive amplitude for pi/2 is simply half the amplitude of the pi pulse
+    drive_amp = pi_amp / 2
+
+    # x_90 is a concise way to say pi_over_2; i.e., an X rotation of 90 degrees
+    with pulse.build(backend) as x90_pulse:
+        drive_duration = get_closest_multiple_of_16(pulse.seconds_to_samples(drive_duration_sec))
+        drive_sigma = pulse.seconds_to_samples(drive_sigma_sec)
+        drive_chan = pulse.drive_channel(qubit)
+        pulse.play(pulse.Gaussian(duration=drive_duration,
+                                  amp=drive_amp,
+                                  sigma=drive_sigma,
+                                  name='x90_pulse'), drive_chan)
 
     # create schedules for Ramsey experiment
     ramsey_schedules = []
-    pulse.SetPhase(0, drive_chan)
-    for delay in delay_times_dt:
-        this_schedule = pulse.Schedule(name=f"Ramsey delay = {delay * dt / us} us")
-        this_schedule |= Play(x90_pulse, drive_chan)
-        this_schedule |= Play(x90_pulse, drive_chan) << int(this_schedule.duration + delay)
-        this_schedule |= measure << int(this_schedule.duration)
-
-        ramsey_schedules.append(this_schedule)
+    ramsey_frequency = round(precise_qubit_freq + detuning_MHz * MHz, 6)  # need ramsey freq in Hz
+    for time in times:
+        with pulse.build(backend=backend, default_alignment='sequential',
+                         name=f"det = {detuning_MHz} MHz") as ramsey_schedule:
+            drive_chan = pulse.drive_channel(qubit)
+            pulse.set_frequency(ramsey_frequency, drive_chan)
+            pulse.call(x90_pulse)
+            pulse.delay(get_closest_multiple_of_16(pulse.seconds_to_samples(time*multiplier)), drive_chan)
+            pulse.call(x90_pulse)
+            pulse.measure(qubits=[qubit], registers=[pulse.MemorySlot(mem_slot)])
+        ramsey_schedules.append(ramsey_schedule)
 
     # Execution settings
-    num_shots = 1
+    num_shots = data.num_of_repetitions
 
-    detuning_MHz = 10**(-6)*experiment.ExperimentData.F_degree*(experiment.ExperimentData.const * experiment.ExperimentData.F)#2
-    ramsey_frequency = round(qubit_frequency + detuning_MHz * MHz, 6) # need ramsey freq in Hz
-    ramsey_program = assemble(ramsey_schedules,
-                                 backend=backend,
-                                 meas_level=1,
-                                 meas_return='avg',
-                                 shots=num_shots,
-                                 schedule_los=[{drive_chan: ramsey_frequency}]*len(ramsey_schedules)
-                                )
+    job = backend.run(ramsey_schedules,
+                      meas_level=1,
+                      meas_return='single',
+                      shots=num_shots)
 
-    job = backend.run(ramsey_program)
-    # print(job.job_id())
     job_monitor(job)
 
     ramsey_results = job.result(timeout=120)
 
-    ramsey_values = []
-    for i in range(len(times_us)):
-        ramsey_values.append(ramsey_results.get_memory(i)[qubit]*scale_factor)
+    ramsey_values = {}
+
+    for i in range(len(times)):
+        iq_data = ramsey_results.get_memory(i)[:, qubit] * scale_factor
+        ramsey_values[times[i]]=int(round(sum(map(classify, iq_data)) / num_shots))
+    '''
+    times = [data.t_init * 2 ** (i) for i in range(N, N+N_delta)]
+
+    # create schedules for Ramsey experiment
+    ramsey_schedules = []
+    ramsey_frequency = round(precise_qubit_freq + detuning_MHz * MHz, 6)  # need ramsey freq in Hz
+    for time in times:
+        with pulse.build(backend=backend, default_alignment='sequential',
+                         name=f"det = {detuning_MHz} MHz") as ramsey_schedule:
+            drive_chan = pulse.drive_channel(qubit)
+            pulse.set_frequency(ramsey_frequency, drive_chan)
+            pulse.call(x90_pulse)
+            pulse.delay(get_closest_multiple_of_16(pulse.seconds_to_samples(time * multiplier)), drive_chan)
+            pulse.call(x90_pulse)
+            pulse.measure(qubits=[qubit], registers=[pulse.MemorySlot(mem_slot)])
+        ramsey_schedules.append(ramsey_schedule)
+
+    # Execution settings
+    num_shots = data.num_of_repetitions
+
+    job = backend.run(ramsey_schedules,
+                      meas_level=1,
+                      meas_return='single',
+                      shots=num_shots)
+
+    job_monitor(job)
+
+    ramsey_results = job.result(timeout=120)
+
+    for i in range(len(times)):
+        iq_data = ramsey_results.get_memory(i)[:, qubit] * scale_factor
+        ramsey_values[times[i]] = int(round(sum(map(classify, iq_data)) / num_shots))
+    #'''
+
+
     print(ramsey_values)
-    return ramsey_values # classify(ramsey_values[0])
+    return ramsey_values
 
-
-
-count = 0
-N = 1
-# take time with phi ~  pi/4
-# F = 5
-
-val = output(data.t)
-
-for i in range(len(val)):
-    val[i] = classify(val[i])
-print("final prob: ", 1 - sum(val) / len(val))
-
-'''
-
-'''for i in range(1, N):
-    if output(data.t) == 0:
-        count+=1
-    print("prob: ", count/i)
-'''
-'''def output(t):
-    for i in range(len(times_us)):
-        if abs(t - times_us[i]) <= time_step_us/2:
-            print('here')
-            return classify(ramsey_values[i])'''
-
+#print(output(data))
