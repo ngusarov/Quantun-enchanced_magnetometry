@@ -128,7 +128,7 @@ def renew_probalities(new_qubit_state, data):
     :param distr: current distribution of all fields
     :return: new distribution of all fields
     '''
-    #new_qubit_state = qubit.randbin3(data, data.F)
+    new_qubit_state = qubit.randbin3(data, data.F)
     #new_qubit_state = int(round(sum([qubit.randbin(data, data.F) for i in range(data.num_of_repetitions)])/data.num_of_repetitions))
     #new_qubit_state = [qubit.randbin(data, data.F) for i in range(data.num_of_repetitions)]
     distr_storage.old_distr = data.probability_distribution.copy() # saving current meanings to reaccount all P(F_i) at once

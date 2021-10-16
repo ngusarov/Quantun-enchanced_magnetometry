@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 # constants start ---------------------
 #import qubit
-import real_experiment
+#import real_experiment
 
 
 def gaussian(in_s, F_min, delta_F, in_cen, i):
@@ -37,7 +37,7 @@ class ExperimentData:
     fields_number = round( (F_max - F_min + delta_F) / delta_F ) # amount of discrete F meanings
     time_const = 2
     mu = 10 ** (5) * 927 * 10**(-26)  # magnetic moment of the qubit
-    h = 6.62 * 10 ** (-34)  # plank's constant
+    h = 6.62 * 10 ** (-34) / math.pi  # plank's constant
     const = mu/h  # mu/h
     t = math.pi/(const*F_degree*F_max/2)*2**(-1)
     t_init = t # time of interaction in seconds
@@ -221,7 +221,7 @@ def perform(p_err, a_err, F, n_rep):
     sigma = {}
     a_from_t_sum = {} #sensitivity
     a_from_step = {} #sensitivity
-    N = 13
+    N = 20
     t_sum = 0
     epsilon = 20 * 10 ** (-3)  # 20 pT
     prev_sigma = experimentData.F_max - experimentData.F_min
@@ -229,6 +229,7 @@ def perform(p_err, a_err, F, n_rep):
     prev_step = 0
     prev_entropy_step = -1
 
+    '''
     fig, ax = plt.subplots()
     font = {'fontname': 'Times New Roman'}
     ax.set_title(r'b)')
@@ -244,13 +245,13 @@ def perform(p_err, a_err, F, n_rep):
     print(experimentData.fields_number)
     ax.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
              [each for each in experimentData.probability_distribution], label='k=0')
-
+    '''
     #answers = qubit.randbin2(experimentData, experimentData.F)
     #answers = real_experiment.output(experimentData)
     for step in range(N):
 
         #bayesians_learning.renew_probalities(answers[experimentData.t], experimentData)
-        #bayesians_learning.renew_probalities(1, experimentData)
+        bayesians_learning.renew_probalities(1, experimentData)
         #bayesians_learning.renew_probalities(qubit.randbin2(experimentData, F), experimentData)
         #bayesians_learning.renew_probalities(ramsey_qubit.output(experimentData.t), experimentData)
         t_sum += experimentData.t * experimentData.num_of_repetitions
@@ -284,13 +285,13 @@ def perform(p_err, a_err, F, n_rep):
 
         if flag and prev_sigma < current_sigma:
             prev_sigma = current_sigma
-
+        '''
         if (step) % 10 == 0:
             ax.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], [each for each in experimentData.probability_distribution], label='k={}'.format(step+1)) # distr each _ steps
-
+    
         if (step + 1) % 1 == 0:
             print(num_of_peaks, pseudo_entropy, x_peak, y_peak, step, current_sigma, prev_sigma, experimentData.t, experimentData.const * experimentData.F * experimentData.t*experimentData.F_degree, flag) # checking ~ 1
-
+        '''
         if pseudo_entropy == 1 or num_of_peaks == 1:
             experimentData.num_of_repetitions = n_rep
 
@@ -311,6 +312,7 @@ def perform(p_err, a_err, F, n_rep):
             experimentData.t /= experimentData.time_const ** (1)
 
         if flag and current_sigma*experimentData.gained_degree <= 5*experimentData.delta_F or num_of_peaks > 1:
+            '''
             #plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
             #         [each for each in experimentData.probability_distribution], label='k={}'.format(step+1))
             plt.legend(loc="best")
@@ -326,13 +328,14 @@ def perform(p_err, a_err, F, n_rep):
             # Подписи:
             ax.set_xlabel("Field segment, $nT$", **font)
             ax.set_ylabel(r'$P(F_k)$', **font)
-
+            '''
             expand_2(x_peak, y_peak, current_sigma, experimentData)
+            '''
             plt.plot([experimentData.F_min + i * experimentData.delta_F for i in range(experimentData.fields_number)],
                      [each for each in experimentData.probability_distribution], label='k={}'.format(step+1))
             #print(experimentData.probability_distribution)
-
-        if experimentData.t >= experimentData.T_2:
+            '''
+        if experimentData.t*10**6 >= experimentData.T_2:
             break
 
     '''ax.plot([experimentData.F_min + i*experimentData.delta_F for i in range(experimentData.fields_number)], experimentData.probability_distribution, label='final') # final distr
@@ -341,8 +344,8 @@ def perform(p_err, a_err, F, n_rep):
     plt.show()
     #fig.savefig('distr_' + '.png', dpi=500)
     plt.close()'''
-    print("t_sum: ", list(sigma.keys())[-1], ', sigma:', list(sigma.values())[-1])
-    print("t_coh_max: ", list(a_from_t_sum.keys())[-1] * 10**6, ", sensitivity: ", list(a_from_t_sum.values())[-1]*experimentData.F_degree)
+    #print("t_sum: ", list(sigma.keys())[-1], ', sigma:', list(sigma.values())[-1])
+    #print("t_coh_max: ", list(a_from_t_sum.keys())[-1] * 10**6, ", sensitivity: ", list(a_from_t_sum.values())[-1]*experimentData.F_degree)
     '''try:
         plotter.plotting_sensitivity(a_from_step, r'$N$')
     except Exception:
@@ -351,10 +354,10 @@ def perform(p_err, a_err, F, n_rep):
         plotter.plotting_sensitivity(a_from_t_sum, r'$t_{sum}$')
     except Exception:
         pass'''
-    try:
+    '''try:
         plotter.plotting_sensitivity(a_from_t_sum, r'$t_{coherense\_max}, \, \mu s$')
     except Exception:
-        pass
+        pass'''
 
     #print("final sensitivity: ", a_from_t_sum[t_sum]*10**(-9))
 
@@ -363,7 +366,7 @@ def perform(p_err, a_err, F, n_rep):
     if abs(x_peak - experimentData.F) <= epsilon:
         succeeded = 1
 
-    plotter.plotting(sigma)
+    #plotter.plotting(sigma)
     return succeeded
     #return a_from_t_sum
 
@@ -431,7 +434,7 @@ if __name__ == "__main__":
         for k in range(K):
             for j in range(J):
                 try:
-                    sum += perform(0, 0.05*i, 5+j*10, 101)
+                    sum += perform(0, 0.05*i, 5+j*10, 51)
                 except Exception:
                     pass # total -= 1
         sum /= total
@@ -455,7 +458,7 @@ if __name__ == "__main__":
         for k in range(K):
             for j in range(J):
                 try:
-                    sum += perform(0.05 * i, 0, 5 + j * 10, 101)
+                    sum += perform(0.05 * i, 0, 5 + j * 10, 51)
                 except Exception:
                     pass  # total -= 1
         sum /= total
