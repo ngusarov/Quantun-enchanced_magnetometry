@@ -73,17 +73,18 @@ print("math: ", count / N)
 print("ideal: ", (math.sin(phi/2))**2)
 print("sim+real counted for 1, others for 0")
 '''
-ts = np.linspace(0, 100, 100)
+
+Fs = np.linspace(data.F_min, data.F_max, 100)
 ideals = []
 sims = []
-for t in ts:
-    data.t = t
+for F in Fs:
+    data.F = F
     phi = data.const*data.F*data.F_degree*data.t
-    ideals.append(((math.cos(phi/2))**2-0.5)* np.exp(-data.t/120)+0.5)
-    sims.append(qubit.randbin3(data, data.F, 0, 0, 0))
+    ideals.append((math.cos(phi/2))**2)
+    sims.append(qubit.randbin3(data, data.F))
 
-plt.plot(ts, ideals)
-plt.plot(ts, sims)
+plt.plot(Fs, ideals)
+plt.plot(Fs, sims)
 
 plt.show()
 plt.close()

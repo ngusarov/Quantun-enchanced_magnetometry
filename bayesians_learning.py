@@ -41,7 +41,7 @@ def P_qubit_state_on_F_i(qubit_state, F_i, data):
     k = 0
     t = data.t * 10 ** 6
     #'''
-    if data.OPTIMIZE:
+    if data.OPTIMIZE and t >= data.T_2:
         if qubit_state == 1:
             return ((math.cos(data.const * F_i * data.F_degree * data.t / 2)) ** 2 - 0.5) * np.exp(
                 -t / data.T_2) + 0.5 #+ k * delta_P_qubit_state_on_F_i(qubit_state, F_i, data)
@@ -86,8 +86,8 @@ def rect_integral_of_multiplication_probabilities(P_F_i,
 
 def integrate_distribution(data):
     integral = 0
-    for i in range(data.fields_number):
-        integral += data.probability_distribution[i] * data.delta_F # / data.gained_degree
+    for i in range(data.fields_number-1):
+        integral += (data.probability_distribution[i]+data.probability_distribution[i+1])/2 * data.delta_F # / data.gained_degree
     return integral
 
 
@@ -128,7 +128,9 @@ def renew_probalities(new_qubit_state, data):
     :param distr: current distribution of all fields
     :return: new distribution of all fields
     '''
-    new_qubit_state = qubit.randbin3(data, data.F)
+
+    #new_qubit_state = qubit.randbin3(data, data.F)
+    #print(data.t, new_qubit_state)
     #new_qubit_state = int(round(sum([qubit.randbin(data, data.F) for i in range(data.num_of_repetitions)])/data.num_of_repetitions))
     #new_qubit_state = [qubit.randbin(data, data.F) for i in range(data.num_of_repetitions)]
     distr_storage.old_distr = data.probability_distribution.copy() # saving current meanings to reaccount all P(F_i) at once
@@ -138,13 +140,18 @@ def renew_probalities(new_qubit_state, data):
 
     data.probability_distribution = normalise(data)
 
+    return data.t, new_qubit_state
+
 
 def normalise(data):
     local_data = data
     s = integrate_distribution(local_data)
     for i in range(local_data.fields_number):
-        local_data.probability_distribution[i] = local_data.probability_distribution[i] / s
+        local_data.probability_distribution[i] = local_data.probability_distribution[i] / s * local_data.remained_sq
 
+
+    # rem = integrate_distr() = 1'/2 + 2' + 3' + ...
+    # s = 1/2 + 2 + ...
     '''peak = max(local_data.probability_distribution)
     if peak > 0.9:
         k = peak/0.9

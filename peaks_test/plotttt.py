@@ -1,28 +1,24 @@
+import math
+
 import matplotlib.pyplot as plt
-import numpy as np
 
 fig, ax = plt.subplots()
 font = {'fontname': 'Times New Roman'}
 ax.set_title(r'')
 
 ax.minorticks_on()
-ax.grid(which='major', axis='both')
-ax.grid(which='minor', axis='both', linestyle=':')
 
-# Подписи:
-ax.set_xlabel(r'$\phi$, $radians$', **font)
-ax.set_ylabel(r'$P_{|state>}(\phi)$', **font)
+#x = np.linspace(0, 1.7*3.1415)
 
-x = np.linspace(0, 1.7*3.1415)
-ax.plot(
-    x, (np.sin(x/2))**2, label=r'$P_{|0>}(\phi)$'
-)
-ax.plot(
-    x, (np.cos(x/2))**2, label=r'$P_{|1>}(\phi)$'
-)
+j00 = 1000
+sigma = 300 #math.sqrt(j00)
 
-plt.legend(loc="best")
+def gaussian(x): #sigma  = sqrt(b), x_0 = b
+    return 1 / (sigma * (2 * math.pi) ** 0.5) * math.exp(-(j00 - x) ** 2 / (2 * sigma ** 2))
+
+plt.plot([each for each in range(1, 2*j00)], [gaussian(each) for each in range(1, 2*j00)])
 
 plt.show()
+fig.savefig("gaussian.pdf", dpi=500)
 plt.close()
 

@@ -10,6 +10,7 @@ import qiskit.providers.aer.noise as noise
 
 from qiskit import IBMQ
 
+import experiment
 
 
 def randbin(data, F): # simple math
@@ -56,10 +57,10 @@ def randbin2(data, F): #real machine
 '''
 
 def randbin3(data, F, theta_sphere, phi_sphere=0): # simulator --- WORKS
-    prob_1 = 0.3
-    error_1 = noise.depolarizing_error(prob_1, 1)
+    error_2 = noise.thermal_relaxation_error(data.T_1 * 10 ** (-6), data.T_2 * 10 ** (-6), data.t,
+                                             excited_state_population=0)
     noise_model = noise.NoiseModel()
-    noise_model.add_all_qubit_quantum_error(error_1, ['u3'])
+    noise_model.add_all_qubit_quantum_error(error_2, ['rz', 'h'])
     basis_gates = noise_model.basis_gates
 
 
@@ -71,9 +72,9 @@ def randbin3(data, F, theta_sphere, phi_sphere=0): # simulator --- WORKS
     # Create a Quantum Circuit acting on the q register
     circuit = QuantumCircuit(q, c)
 
-    rotate_angle = math.pi - 2*phi
-    circuit.u3(theta_sphere, phi_sphere, 0, q)
-    circuit.rz(2*phi, q)
+    circuit.h(q)
+    circuit.rz(phi, q)
+    circuit.delay(data.t, unit='s')
     circuit.h(q)
 
     # Map the quantum measurement to the classical bits
@@ -82,7 +83,7 @@ def randbin3(data, F, theta_sphere, phi_sphere=0): # simulator --- WORKS
     # Execute the circuit on the qasm simulator
     job = execute(circuit, Aer.get_backend('qasm_simulator'),
                  basis_gates=basis_gates,
-                 noise_model=noise_model, shots=1)
+                 noise_model=noise_model, shots=1000)
     #job_monitor(job)
 
     # Grab results from the job
@@ -90,5 +91,16 @@ def randbin3(data, F, theta_sphere, phi_sphere=0): # simulator --- WORKS
 
     # Returns counts
     counts = result.get_counts(circuit)
+    # print(counts, 'for sim')
+    try:
+        return int(counts['0']) / 1000  # int(list(counts.keys())[0])
+    except Exception:
+        return 0
 
-    return int(list(counts.keys())[0])
+
+data = experiment.ExperimentData()
+data.F = 20
+data.T_2 = data.T_1 = 1000
+data.t = data.t_init
+
+print(randbin(data, data.F))

@@ -8,11 +8,11 @@ import matplotlib
 def preparing_figure(fig_title, x_label, y_label):
     fig, ax = plt.subplots()
     font = {'fontname': 'Times New Roman'}
-    ax.set_title(fig_title)
+    ax.set_title(fig_title, fontsize=20)
 
     # Подписи:
-    ax.set_xlabel(x_label, **font)
-    ax.set_ylabel(y_label, **font)
+    ax.set_xlabel(x_label, **font, fontsize=20)
+    ax.set_ylabel(y_label, **font, fontsize=20)
 
     # Сетка:
     ax.minorticks_on()
@@ -62,31 +62,34 @@ def plotting(sigma):
         'v',
         'black'
     ]
+    #title = 'Half-width of PDD'
     title = ''
-    #title = ''
-    x_label = r'$\log(t_{sum})$'
-    y_label = r'$\log(\sigma)$'
+    x_label = r'$t_{sum}$'
+    y_label = r'$\sigma$'
     fig, ax = preparing_figure(title, x_label, y_label)
     p = 0
-    approx = True
-    x = [math.log(each) for each in list(sigma.keys())]
-    y = [math.log(each) for each in list(sigma.values())]
+    approx = False
+    x = [each for each in list(sigma.keys())]
+    y = [each for each in list(sigma.values())]
     x_p = np.linspace(min(x), max(x))
     if approx:
         p = fitting(x[4:], y[4:], 1)
 
         ax.plot(x_p, p(x_p), c=types_of_colors[0], ls='-', label=r'$\sigma(t_{sum})$')
-        ax.plot(x, y, types_of_dots[2], c=types_of_colors[0])
+        ax.plot(x, y, types_of_dots[1], c=types_of_colors[0])
     else:
-        ax.plot(x, y, types_of_dots[2], c=types_of_colors[0], label=r'$\sigma(t_{sum})$')
+        ax.plot(x, y, types_of_dots[1], c=types_of_colors[0], label=r'$\sigma(t_{sum})$')
 
-    p_min = fitting([math.log(each) for each in list(sigma.keys())], [math.log(1/each) for each in list(sigma.keys())], 1)
-    plt.plot(x_p, p_min(x_p) + p(x_p[0]) - p_min(x_p[0]), label=r'$\frac{1}{ t_{sum} }$')
+    #p_min = fitting([each for each in list(sigma.keys())], [1/each for each in list(sigma.keys())], 1)
+    plt.plot([each for each in list(sigma.keys())], [1/each for each in list(sigma.keys())], label=r'$\frac{1}{ t_{sum} }$')
 
-    p_max = fitting([math.log(each) for each in list(sigma.keys())  ], [math.log((1/each) ** 0.5) for each in list(sigma.keys())], 1)
-    plt.plot(x_p, p_max(x_p) + p(x_p[0]) - p_max(x_p[0]), label=r'$\frac{1}{ \sqrt{ t_{sum} } }$')
+    #p_max = fitting([each for each in list(sigma.keys())  ], [(1/each) ** 0.5 for each in list(sigma.keys())], 1)
+    plt.plot([each for each in list(sigma.keys())  ], [(1/each) ** 0.5 for each in list(sigma.keys())], label=r'$\frac{1}{ \sqrt{ t_{sum} } }$')
 
-    plt.legend(loc='best', prop={'size': 15})
+    plt.xscale('log')
+    plt.yscale('log')
+
+    plt.legend(loc='best', prop={'size': 20})
 
     plt.show()
 
@@ -95,7 +98,7 @@ def plotting(sigma):
 
     plt.close()
 
-    print ("degrees of sigma: ", p_min, p, p_max)
+    #print ("degrees of sigma: ", p_min, p, p_max)
 
 
 def plotting_sensitivity(sensitivity, dependence):
@@ -141,7 +144,7 @@ def plotting_sensitivity(sensitivity, dependence):
                     [math.log((1 / each) ** 0.5) for each in list(sensitivity.keys())[step_delay:]], 1)
     #plt.plot(x_p, p_max(x_p) + p(x_p[0]) - p_max(x_p[0]), label=r'$\frac{1}{ \sqrt{ t_{sum} } }$')
 
-    plt.legend(loc='best', prop={'size': 15})
+    plt.legend(loc='best', prop={'size': 20})
 
     plt.show()
 
@@ -184,7 +187,7 @@ def plotting_compilation(adaptive, brute, dependence):
     ax.plot(x, y, types_of_dots[3], c=types_of_colors[1],
             label='Adaptive algo ' + r'$\delta F \cdot \sqrt{t_{sum}}$' + '\n' + 'F = 0...50 $fT$')
 
-    plt.legend(loc='best', prop={'size': 15})
+    plt.legend(loc='best', prop={'size': 20})
 
     plt.show()
     plt.close()

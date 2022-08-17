@@ -73,9 +73,10 @@ def randbin2(data, F): #real machine
     
 '''
 
-def randbin3(data, F, err, time, delta): # simulator --- WORKS with reversed probabilities
-    #error_1 = noise.phase_amplitude_damping_error(param_phase=err/3, param_amp=err*2/3)
-    error_2 = noise.thermal_relaxation_error(200, 120, data.t, excited_state_population=0)
+def randbin3(data, F): # simulator --- WORKS with reversed probabilities
+    #error_1 = noise.phase_amplitude_damping_error(param_phase=1, param_amp=0)
+    print(data.t*10**6)
+    error_2 = noise.thermal_relaxation_error(0.001, 0.001, data.t*10**6, excited_state_population=0)
     noise_model = noise.NoiseModel()
     noise_model.add_all_qubit_quantum_error(error_2, ['rz'])
     basis_gates = noise_model.basis_gates
@@ -92,7 +93,7 @@ def randbin3(data, F, err, time, delta): # simulator --- WORKS with reversed pro
     #circuit.ry(math.pi/2+delta, q)
     #circuit.u3(math.pi / 2, 0, math.pi, q)
     #circuit.u3(-math.pi / 4, 0, 0, q)
-    circuit.rz(phi+delta, q)
+    circuit.rz(phi, q)
     circuit.h(q)
 
     # Map the quantum measurement to the classical bits

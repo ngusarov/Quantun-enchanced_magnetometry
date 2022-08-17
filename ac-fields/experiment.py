@@ -206,8 +206,8 @@ def perform():
 
     for step in range(N):
 
-        bayesians_learning.renew_probalities(experimentData)
-        #bayesians_learning.renew_probalities(qubit.randbin3(experimentData, F), experimentData)
+        #bayesians_learning.renew_probalities(experimentData)
+        bayesians_learning.renew_probalities(qubit.randbin3(experimentData, F), experimentData)
         #bayesians_learning.renew_probalities(qubit.randbin2(experimentData, F), experimentData)
         #bayesians_learning.renew_probalities(ramsey_qubit.output(experimentData.t), experimentData)
         t_sum += experimentData.t * experimentData.num_of_repetitions
